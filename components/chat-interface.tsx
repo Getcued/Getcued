@@ -21,33 +21,85 @@ import {
   Paperclip,
   X,
   FileText,
+  ChevronDown,
+  Clock,
+  Heart,
 } from "lucide-react"
 import { useVoice } from "@/hooks/use-voice"
 import { VoiceVisualizer } from "@/components/voice-visualizer"
 import { VoiceSettings } from "@/components/voice-settings"
 import { FileUploadZone } from "@/components/file-upload-zone"
+import { EmojiReactions } from "@/components/emoji-reactions"
 import { useConversations, type ChatMessage } from "@/hooks/use-conversations"
 
-const examplePrompts = [
+// Enhanced script suggestions with real plays and scenes
+const scriptSuggestions = [
   {
     icon: Theater,
-    title: "Practice a scene",
-    prompt: "Let's rehearse Act 2, Scene 1 from Romeo and Juliet. You be Romeo.",
+    title: "Romeo & Juliet - Balcony Scene",
+    prompt: "Let's rehearse the balcony scene from Romeo and Juliet, Act 2 Scene 2. You be Romeo, I'll be Juliet.",
+    play: "Romeo and Juliet",
+    character: "Romeo/Juliet",
+    genre: "Shakespeare",
   },
   {
     icon: Users,
-    title: "Character work",
-    prompt: "Help me develop the backstory for Lady Macbeth in our upcoming production.",
+    title: "Hamlet - To Be or Not To Be",
+    prompt: "Help me work on Hamlet's famous soliloquy 'To be or not to be' from Act 3, Scene 1.",
+    play: "Hamlet",
+    character: "Hamlet",
+    genre: "Shakespeare",
   },
   {
     icon: BookOpen,
-    title: "Script analysis",
-    prompt: "Can you help me understand Hamlet's motivation in the 'To be or not to be' soliloquy?",
+    title: "Macbeth - Lady Macbeth Sleepwalking",
+    prompt:
+      "Let's practice Lady Macbeth's sleepwalking scene from Act 5, Scene 1. I need help with her guilt and madness.",
+    play: "Macbeth",
+    character: "Lady Macbeth",
+    genre: "Drama",
   },
   {
     icon: Sparkles,
-    title: "Improv practice",
-    prompt: "Let's do an improv scene. You're a detective, I'm a witness to a crime.",
+    title: "A Streetcar Named Desire - Blanche",
+    prompt:
+      "I want to work on Blanche DuBois from A Streetcar Named Desire. Help me understand her vulnerability and delusion.",
+    play: "A Streetcar Named Desire",
+    character: "Blanche DuBois",
+    genre: "Drama",
+  },
+  {
+    icon: Theater,
+    title: "Death of a Salesman - Willy Loman",
+    prompt:
+      "Let's explore Willy Loman's character from Death of a Salesman. I need help with his desperation and dreams.",
+    play: "Death of a Salesman",
+    character: "Willy Loman",
+    genre: "Drama",
+  },
+  {
+    icon: Users,
+    title: "The Glass Menagerie - Laura",
+    prompt: "Help me develop Laura Wingfield from The Glass Menagerie. I want to capture her shyness and fragility.",
+    play: "The Glass Menagerie",
+    character: "Laura Wingfield",
+    genre: "Drama",
+  },
+  {
+    icon: BookOpen,
+    title: "Much Ado About Nothing - Beatrice",
+    prompt: "Let's work on Beatrice from Much Ado About Nothing. I need help with her wit and banter with Benedick.",
+    play: "Much Ado About Nothing",
+    character: "Beatrice",
+    genre: "Shakespeare",
+  },
+  {
+    icon: Sparkles,
+    title: "Who's Afraid of Virginia Woolf - Martha",
+    prompt: "I want to rehearse Martha from Who's Afraid of Virginia Woolf. Help me with her aggression and pain.",
+    play: "Who's Afraid of Virginia Woolf",
+    character: "Martha",
+    genre: "Drama",
   },
 ]
 
@@ -72,13 +124,18 @@ export function ChatInterface({ onConversationStart }: ChatInterfaceProps) {
   const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null)
   const [isUserScrolling, setIsUserScrolling] = useState(false)
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true)
+  const [showScrollButton, setShowScrollButton] = useState(false)
+  const [showEmojiReaction, setShowEmojiReaction] = useState(false)
+  const [lastMessageContent, setLastMessageContent] = useState("")
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const scrollTimeoutRef = useRef<NodeJS.Timeout>()
   const lastScrollTopRef = useRef(0)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const autoScrollTimeoutRef = useRef<NodeJS.Timeout>()
 
-  const { getCurrentConversation, createConversation, addMessage } = useConversations()
+  const { getCurrentConversation, createConversation, addMessage, memory, getPersonalizedGreeting } = useConversations()
 
   const currentConversation = getCurrentConversation()
   const chatMessages = currentConversation?.messages || []
@@ -128,73 +185,131 @@ export function ChatInterface({ onConversationStart }: ChatInterfaceProps) {
     }
   }, [getVoices])
 
-  // Smart auto-scroll behavior
+  // Get personalized suggestions based on memory
+  const getPersonalizedSuggestions = useCallback(() => {
+    const suggestions = [...scriptSuggestions]
+
+    // If user has memory, prioritize related suggestions
+    if (memory.lastPlay || memory.lastCharacter || memory.lastGenre) {
+      const prioritized = suggestions.filter(
+        (s) =>
+          s.play === memory.lastPlay ||
+          s.character.includes(memory.lastCharacter || "") ||
+          s.genre === memory.lastGenre,
+      )
+
+      const others = suggestions.filter(
+        (s) =>
+          s.play !== memory.lastPlay &&
+          !s.character.includes(memory.lastCharacter || "") &&
+          s.genre !== memory.lastGenre,
+      )
+
+      return [...prioritized.slice(0, 2), ...others.slice(0, 2)]
+    }
+
+    // Return random 4 suggestions for new users
+    return suggestions.sort(() => Math.random() - 0.5).slice(0, 4)
+  }, [memory])
+
+  // Enhanced auto-scroll behavior
   const scrollToBottom = useCallback(
-    (smooth = true) => {
-      if (messagesEndRef.current && shouldAutoScroll) {
-        const scrollOptions: ScrollIntoViewOptions = {
-          behavior: smooth ? "smooth" : "auto",
-          block: "end",
-          inline: "nearest",
+    (force = false) => {
+      if (messagesEndRef.current && (shouldAutoScroll || force)) {
+        // Clear any existing timeout
+        if (autoScrollTimeoutRef.current) {
+          clearTimeout(autoScrollTimeoutRef.current)
         }
 
-        setTimeout(() => {
-          messagesEndRef.current?.scrollIntoView(scrollOptions)
+        // Use multiple strategies for reliable scrolling
+        const scrollElement = messagesEndRef.current
+
+        // Strategy 1: Immediate scroll
+        scrollElement.scrollIntoView({ behavior: "smooth", block: "end" })
+
+        // Strategy 2: Backup scroll after a short delay
+        autoScrollTimeoutRef.current = setTimeout(() => {
+          scrollElement.scrollIntoView({ behavior: "smooth", block: "end" })
         }, 100)
+
+        // Strategy 3: Final fallback scroll
+        setTimeout(() => {
+          if (messagesContainerRef.current) {
+            const container = messagesContainerRef.current
+            container.scrollTop = container.scrollHeight
+          }
+        }, 300)
       }
     },
     [shouldAutoScroll],
   )
 
-  // Handle scroll detection
+  // Handle scroll detection with improved logic
   const handleScroll = useCallback(() => {
     const container = messagesContainerRef.current
     if (!container) return
 
     const { scrollTop, scrollHeight, clientHeight } = container
-    const isAtBottom = Math.abs(scrollHeight - clientHeight - scrollTop) < 50
+    const isAtBottom = Math.abs(scrollHeight - clientHeight - scrollTop) < 100
+    const isScrollingUp = scrollTop < lastScrollTopRef.current
 
-    if (scrollTop < lastScrollTopRef.current && !isAtBottom) {
+    // Show scroll button when user scrolls up and there are new messages
+    setShowScrollButton(!isAtBottom && chatMessages.length > 0)
+
+    // Update auto-scroll behavior
+    if (isScrollingUp && !isAtBottom) {
       setIsUserScrolling(true)
       setShouldAutoScroll(false)
     } else if (isAtBottom) {
       setIsUserScrolling(false)
       setShouldAutoScroll(true)
+      setShowScrollButton(false)
     }
 
     lastScrollTopRef.current = scrollTop
 
+    // Clear existing timeout
     if (scrollTimeoutRef.current) {
       clearTimeout(scrollTimeoutRef.current)
     }
 
+    // Reset auto-scroll after user stops scrolling
     scrollTimeoutRef.current = setTimeout(() => {
       if (isAtBottom) {
         setIsUserScrolling(false)
         setShouldAutoScroll(true)
+        setShowScrollButton(false)
       }
-    }, 1000)
-  }, [])
+    }, 1500)
+  }, [chatMessages.length])
 
   // Auto-scroll when new messages arrive
   useEffect(() => {
-    if (chatMessages.length > 0 && shouldAutoScroll) {
-      scrollToBottom(true)
+    if (chatMessages.length > 0) {
+      // Always scroll to bottom for new messages
+      setTimeout(() => {
+        scrollToBottom(true)
+      }, 50)
     }
-  }, [chatMessages, scrollToBottom, shouldAutoScroll])
+  }, [chatMessages.length, scrollToBottom])
 
+  // Auto-scroll when loading state changes
   useEffect(() => {
-    if (isLoading && shouldAutoScroll) {
-      scrollToBottom(true)
+    if (isLoading) {
+      setTimeout(() => {
+        scrollToBottom(true)
+      }, 50)
     }
-  }, [isLoading, scrollToBottom, shouldAutoScroll])
+  }, [isLoading, scrollToBottom])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if ((!message.trim() && !uploadedFile) || isLoading) return
 
+    // Force auto-scroll for new messages
     setShouldAutoScroll(true)
     setIsUserScrolling(false)
+    setShowScrollButton(false)
 
     let userContent = message.trim()
 
@@ -211,6 +326,11 @@ export function ChatInterface({ onConversationStart }: ChatInterfaceProps) {
       timestamp: new Date(),
     }
 
+    // Trigger emoji reactions for user messages
+    setLastMessageContent(userContent)
+    setShowEmojiReaction(true)
+    setTimeout(() => setShowEmojiReaction(false), 100)
+
     // Create new conversation or add to existing
     let conversationId = currentConversation?.id
     if (!conversationId) {
@@ -220,7 +340,12 @@ export function ChatInterface({ onConversationStart }: ChatInterfaceProps) {
       addMessage(userMessage)
     }
 
+    // Clear message and restore focus
     setMessage("")
+    setTimeout(() => {
+      textareaRef.current?.focus()
+    }, 100)
+
     setUploadedFile(null)
     setIsLoading(true)
 
@@ -230,7 +355,10 @@ export function ChatInterface({ onConversationStart }: ChatInterfaceProps) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ message: userContent }),
+        body: JSON.stringify({
+          message: userContent,
+          memory: memory, // Send memory context to API
+        }),
       })
 
       if (!response.ok) {
@@ -248,6 +376,13 @@ export function ChatInterface({ onConversationStart }: ChatInterfaceProps) {
       }
 
       addMessage(aiMessage, conversationId)
+
+      // Trigger emoji reactions for AI responses too
+      setTimeout(() => {
+        setLastMessageContent(data.response)
+        setShowEmojiReaction(true)
+        setTimeout(() => setShowEmojiReaction(false), 100)
+      }, 500)
 
       // Speak the AI response
       if (selectedVoice && data.response) {
@@ -275,6 +410,9 @@ export function ChatInterface({ onConversationStart }: ChatInterfaceProps) {
 
   const handleExampleClick = (prompt: string) => {
     setMessage(prompt)
+    setTimeout(() => {
+      textareaRef.current?.focus()
+    }, 100)
   }
 
   const toggleListening = () => {
@@ -306,7 +444,15 @@ export function ChatInterface({ onConversationStart }: ChatInterfaceProps) {
     setUploadedFile(null)
   }
 
+  const handleScrollToBottom = () => {
+    setShouldAutoScroll(true)
+    setIsUserScrolling(false)
+    setShowScrollButton(false)
+    scrollToBottom(true)
+  }
+
   const hasStartedChatting = chatMessages.length > 0 || isLoading
+  const personalizedSuggestions = getPersonalizedSuggestions()
 
   return (
     <motion.div
@@ -316,7 +462,11 @@ export function ChatInterface({ onConversationStart }: ChatInterfaceProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, delay: 1 }}
+      data-chat-interface
     >
+      {/* Emoji Reactions */}
+      <EmojiReactions trigger={showEmojiReaction} messageContent={lastMessageContent} />
+
       {/* Voice Error Alert */}
       <AnimatePresence>
         {voiceError && (
@@ -340,120 +490,159 @@ export function ChatInterface({ onConversationStart }: ChatInterfaceProps) {
         )}
       </AnimatePresence>
 
+      {/* Memory Status */}
+      {!hasStartedChatting && memory.totalSessions > 0 && (
+        <motion.div
+          className="mb-6 p-4 bg-purple-900/20 backdrop-blur-sm border border-purple-500/30 rounded-lg"
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          transition={{ delay: 1.5 }}
+        >
+          <div className="flex items-center space-x-3">
+            <Clock className="w-5 h-5 text-purple-400" />
+            <div>
+              <p className="text-purple-300 font-medium">Welcome back!</p>
+              <p className="text-gray-300 text-sm">
+                Session #{memory.totalSessions + 1} •
+                {memory.lastCharacter && ` Last character: ${memory.lastCharacter}`}
+                {memory.lastPlay && ` • ${memory.lastPlay}`}
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Chat Messages */}
       <AnimatePresence>
         {hasStartedChatting && (
           <motion.div
-            ref={messagesContainerRef}
-            className={`mb-6 space-y-6 px-2 chat-messages transition-all duration-700 ease-in-out ${
-              hasStartedChatting ? "max-h-[70vh] min-h-[400px]" : "max-h-[500px]"
-            } overflow-y-auto`}
+            className="relative"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            onScroll={handleScroll}
-            style={{ scrollBehavior: "smooth" }}
           >
-            {/* Scroll to bottom indicator */}
-            <AnimatePresence>
-              {isUserScrolling && !shouldAutoScroll && (
-                <motion.button
-                  onClick={() => {
-                    setShouldAutoScroll(true)
-                    setIsUserScrolling(false)
-                    scrollToBottom(true)
+            <div
+              ref={messagesContainerRef}
+              className={`mb-6 space-y-6 px-2 chat-messages transition-all duration-700 ease-in-out ${
+                hasStartedChatting ? "max-h-[70vh] min-h-[400px]" : "max-h-[500px]"
+              } overflow-y-auto scroll-smooth`}
+              onScroll={handleScroll}
+            >
+              {chatMessages.map((msg, index) => (
+                <motion.div
+                  key={msg.id}
+                  className={`flex ${msg.isUser ? "justify-end" : "justify-start"}`}
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{
+                    delay: index * 0.05,
+                    duration: 0.3,
+                    ease: "easeOut",
                   }}
-                  className="fixed bottom-32 right-8 z-10 bg-pink-600 hover:bg-pink-700 text-white p-3 rounded-full shadow-lg transition-colors"
+                >
+                  <div
+                    className={`flex items-start space-x-3 max-w-[85%] ${msg.isUser ? "flex-row-reverse space-x-reverse" : ""}`}
+                  >
+                    <motion.div
+                      className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                        msg.isUser ? "bg-gradient-to-r from-pink-500 to-purple-600" : "bg-gray-700"
+                      }`}
+                      whileHover={{ scale: 1.1 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                    >
+                      {msg.isUser ? (
+                        <span className="text-white text-sm font-medium">U</span>
+                      ) : (
+                        <Bot className="w-4 h-4 text-pink-400" />
+                      )}
+                    </motion.div>
+
+                    <motion.div
+                      className={`rounded-2xl px-5 py-4 message-bubble ${
+                        msg.isUser
+                          ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white"
+                          : "bg-gray-800/60 backdrop-blur-sm text-gray-100 border border-gray-700/50"
+                      }`}
+                      whileHover={{ scale: 1.01 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                    >
+                      {!msg.isUser && (
+                        <div className="flex items-center space-x-2 mb-2">
+                          <span className="text-xs text-pink-400 font-medium">Cued AI</span>
+                          {msg.source === "fallback" && (
+                            <Zap
+                              className="w-3 h-3 text-yellow-400"
+                              title="Powered by Cued's intelligent fallback system"
+                            />
+                          )}
+                        </div>
+                      )}
+                      <div className="whitespace-pre-wrap">{msg.content}</div>
+                    </motion.div>
+                  </div>
+                </motion.div>
+              ))}
+
+              {/* Loading Message */}
+              {isLoading && (
+                <motion.div
+                  className="flex justify-start"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className="flex items-start space-x-3 max-w-[85%]">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center">
+                      <Bot className="w-4 h-4 text-pink-400" />
+                    </div>
+                    <div className="bg-gray-800/60 backdrop-blur-sm border border-gray-700/50 rounded-2xl px-5 py-4">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <span className="text-xs text-pink-400 font-medium">Cued AI</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <div className="flex space-x-1">
+                          <motion.div
+                            className="w-2 h-2 bg-pink-400 rounded-full"
+                            animate={{ scale: [1, 1.2, 1] }}
+                            transition={{ duration: 0.6, repeat: Number.POSITIVE_INFINITY, delay: 0 }}
+                          />
+                          <motion.div
+                            className="w-2 h-2 bg-pink-400 rounded-full"
+                            animate={{ scale: [1, 1.2, 1] }}
+                            transition={{ duration: 0.6, repeat: Number.POSITIVE_INFINITY, delay: 0.2 }}
+                          />
+                          <motion.div
+                            className="w-2 h-2 bg-pink-400 rounded-full"
+                            animate={{ scale: [1, 1.2, 1] }}
+                            transition={{ duration: 0.6, repeat: Number.POSITIVE_INFINITY, delay: 0.4 }}
+                          />
+                        </div>
+                        <span className="text-gray-400 text-sm">Thinking...</span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Scroll to Bottom Button */}
+            <AnimatePresence>
+              {showScrollButton && (
+                <motion.button
+                  onClick={handleScrollToBottom}
+                  className="absolute bottom-6 right-6 z-10 bg-pink-600 hover:bg-pink-700 text-white p-3 rounded-full shadow-lg transition-colors group"
                   initial={{ opacity: 0, scale: 0.8, y: 20 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.8, y: 20 }}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
+                  title="Scroll to latest message"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                  </svg>
+                  <ChevronDown className="w-5 h-5 group-hover:translate-y-0.5 transition-transform" />
                 </motion.button>
               )}
             </AnimatePresence>
-
-            {chatMessages.map((msg, index) => (
-              <motion.div
-                key={msg.id}
-                className={`flex ${msg.isUser ? "justify-end" : "justify-start"}`}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <div
-                  className={`flex items-start space-x-3 max-w-[85%] ${msg.isUser ? "flex-row-reverse space-x-reverse" : ""}`}
-                >
-                  <div
-                    className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                      msg.isUser ? "bg-gradient-to-r from-pink-500 to-purple-600" : "bg-gray-700"
-                    }`}
-                  >
-                    {msg.isUser ? (
-                      <span className="text-white text-sm font-medium">U</span>
-                    ) : (
-                      <Bot className="w-4 h-4 text-pink-400" />
-                    )}
-                  </div>
-
-                  <div
-                    className={`rounded-2xl px-5 py-4 message-bubble ${
-                      msg.isUser
-                        ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white"
-                        : "bg-gray-800/60 backdrop-blur-sm text-gray-100 border border-gray-700/50"
-                    }`}
-                  >
-                    {!msg.isUser && (
-                      <div className="flex items-center space-x-2 mb-2">
-                        <span className="text-xs text-pink-400 font-medium">Cued AI</span>
-                        {msg.source === "fallback" && (
-                          <Zap
-                            className="w-3 h-3 text-yellow-400"
-                            title="Powered by Cued's intelligent fallback system"
-                          />
-                        )}
-                      </div>
-                    )}
-                    <div className="whitespace-pre-wrap">{msg.content}</div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-
-            {/* Loading Message */}
-            {isLoading && (
-              <motion.div className="flex justify-start" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                <div className="flex items-start space-x-3 max-w-[85%]">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center">
-                    <Bot className="w-4 h-4 text-pink-400" />
-                  </div>
-                  <div className="bg-gray-800/60 backdrop-blur-sm border border-gray-700/50 rounded-2xl px-5 py-4">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <span className="text-xs text-pink-400 font-medium">Cued AI</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-pink-400 rounded-full animate-bounce" />
-                        <div
-                          className="w-2 h-2 bg-pink-400 rounded-full animate-bounce"
-                          style={{ animationDelay: "0.1s" }}
-                        />
-                        <div
-                          className="w-2 h-2 bg-pink-400 rounded-full animate-bounce"
-                          style={{ animationDelay: "0.2s" }}
-                        />
-                      </div>
-                      <span className="text-gray-400 text-sm">Thinking...</span>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-            <div ref={messagesEndRef} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -494,8 +683,10 @@ export function ChatInterface({ onConversationStart }: ChatInterfaceProps) {
           exit={{ opacity: 0, y: -20 }}
           transition={{ delay: 1.2 }}
         >
-          <h2 className="text-2xl md:text-3xl font-semibold text-white mb-4">Ready to rehearse?</h2>
-          <p className="text-gray-300 text-lg">Start a scene, practice lines, or work on character development</p>
+          <h2 className="text-2xl md:text-3xl font-semibold text-white mb-4">
+            {memory.totalSessions > 0 ? "Ready to continue rehearsing?" : "Ready to rehearse?"}
+          </h2>
+          <p className="text-gray-300 text-lg">{getPersonalizedGreeting()}</p>
           {!isSupported && (
             <p className="text-yellow-400 text-sm mt-2">
               ⚠️ Voice features require a modern browser with microphone access
@@ -509,37 +700,56 @@ export function ChatInterface({ onConversationStart }: ChatInterfaceProps) {
         </motion.div>
       )}
 
-      {/* Example Prompts */}
+      {/* Enhanced Script Suggestions */}
       {!hasStartedChatting && (
         <motion.div
-          className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8"
+          className="mb-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ delay: 1.4 }}
         >
-          {examplePrompts.map((example, index) => (
-            <motion.button
-              key={example.title}
-              onClick={() => handleExampleClick(example.prompt)}
-              className="p-4 bg-gray-900/50 backdrop-blur-sm border border-gray-700/50 rounded-lg text-left hover:border-pink-500/50 hover:bg-gray-800/50 transition-all duration-200 group"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.6 + index * 0.1 }}
-            >
-              <div className="flex items-start space-x-3">
-                <div className="p-2 bg-gradient-to-br from-pink-500/20 to-purple-600/20 rounded-lg group-hover:from-pink-500/30 group-hover:to-purple-600/30 transition-colors">
-                  <example.icon className="w-5 h-5 text-pink-400" />
+          {memory.totalSessions > 0 && (
+            <div className="text-center mb-6">
+              <p className="text-gray-400 text-sm flex items-center justify-center space-x-2">
+                <Heart className="w-4 h-4 text-pink-400" />
+                <span>Suggestions based on your rehearsal history</span>
+              </p>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {personalizedSuggestions.map((example, index) => (
+              <motion.button
+                key={example.title}
+                onClick={() => handleExampleClick(example.prompt)}
+                className="p-4 bg-gray-900/50 backdrop-blur-sm border border-gray-700/50 rounded-lg text-left hover:border-pink-500/50 hover:bg-gray-800/50 transition-all duration-200 group"
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.6 + index * 0.1 }}
+              >
+                <div className="flex items-start space-x-3">
+                  <motion.div
+                    className="p-2 bg-gradient-to-br from-pink-500/20 to-purple-600/20 rounded-lg group-hover:from-pink-500/30 group-hover:to-purple-600/30 transition-colors"
+                    whileHover={{ rotate: 5 }}
+                  >
+                    <example.icon className="w-5 h-5 text-pink-400" />
+                  </motion.div>
+                  <div className="flex-1">
+                    <h3 className="text-white font-medium mb-1">{example.title}</h3>
+                    <p className="text-gray-400 text-sm leading-relaxed mb-2">{example.prompt}</p>
+                    <div className="flex items-center space-x-2 text-xs">
+                      <span className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded">{example.genre}</span>
+                      <span className="text-gray-500">•</span>
+                      <span className="text-gray-500">{example.character}</span>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-white font-medium mb-1">{example.title}</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed">{example.prompt}</p>
-                </div>
-              </div>
-            </motion.button>
-          ))}
+              </motion.button>
+            ))}
+          </div>
         </motion.div>
       )}
 
@@ -598,12 +808,15 @@ export function ChatInterface({ onConversationStart }: ChatInterfaceProps) {
         <form onSubmit={handleSubmit} className={`${hasStartedChatting ? "max-w-5xl mx-auto" : ""}`}>
           <div className="relative bg-gray-900/50 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-4 focus-within:border-pink-500/50 transition-colors">
             <Textarea
+              ref={textareaRef}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder={
                 uploadedFile
                   ? "Add any notes or questions about your script..."
-                  : "Start your scene... 'Let's rehearse the balcony scene from Romeo and Juliet'"
+                  : memory.lastCharacter
+                    ? `Continue with ${memory.lastCharacter} or try something new...`
+                    : "Start your scene... 'Let's rehearse the balcony scene from Romeo and Juliet'"
               }
               className="w-full bg-transparent border-none resize-none text-white placeholder-gray-400 focus:ring-0 focus:outline-none min-h-[60px] max-h-[200px]"
               onKeyDown={(e) => {

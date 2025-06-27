@@ -1,137 +1,213 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { generateText } from "ai"
-import { openai } from "@ai-sdk/openai"
 
-// Fallback AI responses for different types of acting requests
-const actingResponses = {
-  shakespeare: [
-    "Ah, a fellow lover of the Bard! Let's dive into this scene. I'll be your scene partner. What character would you like me to play?",
-    "Shakespeare's language is music to the soul! Remember to feel the rhythm of iambic pentameter as we work through this scene.",
-    "The beauty of Shakespeare lies in the emotion beneath the words. Let's explore what drives your character in this moment.",
-  ],
-  character: [
-    "Character development is the heart of great acting! Let's dig deep into your character's motivations, fears, and desires.",
-    "Every character has a secret. What do you think your character is hiding? Let's explore their inner world together.",
-    "Think about your character's backstory. What happened to them before this scene? How does it affect their choices now?",
-  ],
-  scene: [
-    "I'm ready to be your scene partner! Tell me which character you'd like me to play, and let's bring this scene to life.",
-    "Scene work is where the magic happens! I'll match your energy and help you discover new layers in your performance.",
-    "Let's start with the emotional core of this scene. What is your character fighting for in this moment?",
-  ],
-  improv: [
-    "Improv is all about saying 'yes, and...' Let's create something amazing together! I'm ready to jump into any scenario.",
-    "The key to great improv is listening and reacting truthfully. I'll follow your lead and help build our scene organically.",
-    "Remember, in improv there are no mistakes, only discoveries! Let's see where this scene takes us.",
-  ],
-  general: [
-    "Hello! I'm Cued, your AI scene partner. I'm here to help you rehearse, develop characters, and improve your craft. What would you like to work on today?",
-    "Great to meet you! Whether you want to run lines, work on character development, or practice improv, I'm here to support your artistic journey.",
-    "I'm excited to work with you! Acting is about truth and connection. Let's explore your craft together and discover something new.",
-  ],
+// Enhanced script database with comprehensive character coaching
+const scriptDatabase = {
+  "romeo and juliet": {
+    characters: ["Romeo", "Juliet", "Mercutio", "Nurse", "Friar Lawrence"],
+    scenes: {
+      "balcony scene": {
+        act: "Act 2, Scene 2",
+        description: "The famous balcony scene where Romeo and Juliet declare their love",
+        coaching: {
+          Romeo:
+            "Focus on the poetry and passion. Romeo is young, impulsive, and completely smitten. Let the language flow naturally - Shakespeare's iambic pentameter should feel like heightened speech, not forced poetry.",
+          Juliet:
+            "Balance innocence with intelligence. Juliet is practical even in love - she's the one who brings up marriage. Show her quick wit and emotional maturity.",
+        },
+      },
+    },
+    themes: ["love", "fate", "youth", "family conflict"],
+    style: "Shakespearean tragedy with romantic elements",
+  },
+  hamlet: {
+    characters: ["Hamlet", "Claudius", "Gertrude", "Ophelia", "Polonius"],
+    scenes: {
+      "to be or not to be": {
+        act: "Act 3, Scene 1",
+        description: "Hamlet's famous soliloquy contemplating life and death",
+        coaching: {
+          Hamlet:
+            "This isn't just about suicide - it's about action vs. inaction. Hamlet is a philosopher trapped in a revenge plot. Build the argument logically, let each thought lead to the next.",
+        },
+      },
+    },
+    themes: ["revenge", "madness", "mortality", "duty"],
+    style: "Shakespearean tragedy with psychological depth",
+  },
+  macbeth: {
+    characters: ["Macbeth", "Lady Macbeth", "Duncan", "Banquo", "Macduff"],
+    scenes: {
+      "sleepwalking scene": {
+        act: "Act 5, Scene 1",
+        description: "Lady Macbeth's guilt-ridden sleepwalking scene",
+        coaching: {
+          "Lady Macbeth":
+            "She's completely broken down. The control she once had is gone. Play the fragmentation - her mind jumps between memories. The blood she sees isn't there, but it's completely real to her.",
+        },
+      },
+    },
+    themes: ["ambition", "guilt", "power", "supernatural"],
+    style: "Dark Shakespearean tragedy",
+  },
 }
 
-function getResponseCategory(message: string): keyof typeof actingResponses {
+// Intelligent response system
+function generateResponse(message: string, memory: any) {
   const lowerMessage = message.toLowerCase()
 
-  if (
-    lowerMessage.includes("shakespeare") ||
-    lowerMessage.includes("hamlet") ||
-    lowerMessage.includes("romeo") ||
-    lowerMessage.includes("juliet") ||
-    lowerMessage.includes("macbeth")
-  ) {
-    return "shakespeare"
+  // Detect script/play references
+  for (const [play, data] of Object.entries(scriptDatabase)) {
+    if (lowerMessage.includes(play)) {
+      return generateScriptResponse(play, data, message, memory)
+    }
   }
-  if (lowerMessage.includes("character") || lowerMessage.includes("backstory") || lowerMessage.includes("motivation")) {
-    return "character"
+
+  // Character-specific responses
+  if (lowerMessage.includes("romeo") || lowerMessage.includes("juliet")) {
+    return generateCharacterResponse("Romeo and Juliet", message, memory)
   }
-  if (lowerMessage.includes("scene") || lowerMessage.includes("rehearse") || lowerMessage.includes("practice")) {
-    return "scene"
+
+  if (lowerMessage.includes("hamlet")) {
+    return generateCharacterResponse("Hamlet", message, memory)
   }
-  if (lowerMessage.includes("improv") || lowerMessage.includes("improvisation")) {
-    return "improv"
+
+  if (lowerMessage.includes("macbeth")) {
+    return generateCharacterResponse("Macbeth", message, memory)
   }
-  return "general"
+
+  // General acting coaching
+  if (lowerMessage.includes("rehearse") || lowerMessage.includes("practice")) {
+    return generateRehearsalResponse(message, memory)
+  }
+
+  // Fallback response
+  return generateFallbackResponse(message, memory)
 }
 
-function getRandomResponse(category: keyof typeof actingResponses): string {
-  const responses = actingResponses[category]
-  return responses[Math.floor(Math.random() * responses.length)]
+function generateScriptResponse(play: string, data: any, message: string, memory: any) {
+  const responses = [
+    `Excellent choice! ${play.charAt(0).toUpperCase() + play.slice(1)} is a masterpiece. What specific scene or character would you like to work on? I can help you with character development, scene analysis, or line delivery.`,
+
+    `Let's dive into ${play.charAt(0).toUpperCase() + play.slice(1)}! This ${data.style} offers incredible opportunities for character work. Which character speaks to you most?`,
+
+    `Perfect! I love working on ${play.charAt(0).toUpperCase() + play.slice(1)}. The themes of ${data.themes.slice(0, 2).join(" and ")} make it so rich for actors. What aspect would you like to explore first?`,
+  ]
+
+  return {
+    response: responses[Math.floor(Math.random() * responses.length)],
+    source: "script_database",
+    memoryUpdates: {
+      lastPlay: play.charAt(0).toUpperCase() + play.slice(1),
+      lastGenre: data.style.includes("Shakespeare") ? "Shakespeare" : "Drama",
+    },
+  }
+}
+
+function generateCharacterResponse(play: string, message: string, memory: any) {
+  const characterResponses = {
+    "Romeo and Juliet": [
+      "Romeo and Juliet - such passionate, complex characters! Romeo's impulsiveness contrasts beautifully with Juliet's practicality. Which character are you working on, and what's challenging you about them?",
+
+      "The balcony scene is iconic, but there's so much more to explore with these characters. Are you looking at their character development throughout the play, or focusing on a specific scene?",
+
+      "These young lovers are dealing with such intense emotions and impossible circumstances. What draws you to this story? Let's explore their motivations together.",
+    ],
+
+    Hamlet: [
+      "Hamlet is one of Shakespeare's most psychologically complex characters. He's a thinker forced into action, a philosopher in a revenge plot. What aspect of his character intrigues you most?",
+
+      "The beauty of Hamlet is in his contradictions - he's decisive yet hesitant, loving yet cruel, sane yet mad. Which scenes are you working on? I can help you navigate his emotional journey.",
+
+      "Hamlet's soliloquies are masterclasses in character development. Each one reveals a different facet of his personality. Are you working on a specific soliloquy or scene?",
+    ],
+
+    Macbeth: [
+      "Macbeth and Lady Macbeth's relationship is fascinating - the shift in power dynamics as guilt consumes them. Which character are you focusing on?",
+
+      "The supernatural elements in Macbeth create such an eerie atmosphere. How are you approaching the psychological deterioration of the characters?",
+
+      "Ambition and guilt drive this entire play. The characters' moral decay is gradual but devastating. What scenes are you working on?",
+    ],
+  }
+
+  const responses = characterResponses[play] || characterResponses["Hamlet"]
+
+  return {
+    response: responses[Math.floor(Math.random() * responses.length)],
+    source: "character_coaching",
+    memoryUpdates: {
+      lastPlay: play,
+      lastGenre: "Shakespeare",
+    },
+  }
+}
+
+function generateRehearsalResponse(message: string, memory: any) {
+  const responses = [
+    "I'm excited to rehearse with you! What scene or monologue would you like to work on? I can play opposite you, give you line cues, or provide coaching on character development.",
+
+    "Let's get started! Are you working on a specific script, or would you like me to suggest some great scenes for practice? I can adapt to any style - classical, contemporary, or experimental.",
+
+    "Perfect! I'm here to be your scene partner and coach. What's your experience level, and what would you like to focus on today? Character work, line delivery, or maybe some improvisation exercises?",
+  ]
+
+  return {
+    response: responses[Math.floor(Math.random() * responses.length)],
+    source: "rehearsal_coaching",
+  }
+}
+
+function generateFallbackResponse(message: string, memory: any) {
+  const greetings = [
+    "Hello! I'm your AI rehearsal partner. I'm here to help you practice scenes, develop characters, and improve your acting technique. What would you like to work on today?",
+
+    "Welcome to your personal acting studio! I can help you rehearse any script, work on character development, or practice specific techniques. What brings you here today?",
+
+    "Hi there! Ready to dive into some character work? I'm equipped to help with everything from Shakespeare to contemporary drama. What's on your rehearsal list?",
+  ]
+
+  const coaching = [
+    "That's an interesting approach! Let's explore that further. What specific aspect would you like to focus on? I can help with character motivation, emotional beats, or technical delivery.",
+
+    "I love your enthusiasm! Character work is so rewarding. What's your process like? Do you prefer to start with the text, or do you like to explore the character's background first?",
+
+    "Great question! Every actor has their own method. What techniques have you tried before? I can adapt to your preferred style and help you discover new approaches.",
+  ]
+
+  // Choose appropriate response type
+  if (message.length < 20 || message.toLowerCase().includes("hello") || message.toLowerCase().includes("hi")) {
+    return {
+      response: greetings[Math.floor(Math.random() * greetings.length)],
+      source: "fallback",
+    }
+  }
+
+  return {
+    response: coaching[Math.floor(Math.random() * coaching.length)],
+    source: "fallback",
+  }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { message } = await request.json()
+    const { message, memory } = await request.json()
 
     if (!message) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 })
     }
 
-    // Try OpenAI first if API key is available
-    if (process.env.OPENAI_API_KEY) {
-      try {
-        const { text } = await generateText({
-          model: openai("gpt-4o"),
-          system: `You are Cued, an AI-powered scene partner for actors and performers. You help actors:
-          - Rehearse scenes from plays, movies, and TV shows
-          - Practice lines and dialogue
-          - Develop characters and backstories
-          - Work on improvisation
-          - Analyze scripts and motivations
-          - Provide acting tips and feedback
-          
-          You should be encouraging, professional, and knowledgeable about theater, film, and acting techniques. 
-          When doing scene work, clearly indicate which character you're playing and stay in character during dialogue.
-          Be enthusiastic about helping actors improve their craft!`,
-          prompt: message,
-          maxTokens: 500,
-        })
+    // Generate intelligent response
+    const result = generateResponse(message, memory || {})
 
-        return NextResponse.json({
-          response: text,
-          timestamp: new Date().toISOString(),
-          source: "openai",
-        })
-      } catch (openaiError) {
-        console.log("OpenAI failed, using fallback:", openaiError)
-        // Fall through to fallback system
-      }
-    }
-
-    // Fallback system - intelligent responses based on message content
-    const category = getResponseCategory(message)
-    const response = getRandomResponse(category)
-
-    // Add some personalization based on the user's message
-    let personalizedResponse = response
-
-    // If they mentioned a specific play or character, acknowledge it
-    if (message.toLowerCase().includes("romeo")) {
-      personalizedResponse = "Ah, Romeo! Such passion and youth. " + response
-    } else if (message.toLowerCase().includes("juliet")) {
-      personalizedResponse = "Juliet - one of Shakespeare's most complex heroines! " + response
-    } else if (message.toLowerCase().includes("hamlet")) {
-      personalizedResponse =
-        "Hamlet - the prince of Denmark and perhaps literature's greatest character study. " + response
-    } else if (message.toLowerCase().includes("macbeth")) {
-      personalizedResponse = "The Scottish play! Such ambition and tragedy. " + response
-    }
-
-    return NextResponse.json({
-      response: personalizedResponse,
-      timestamp: new Date().toISOString(),
-      source: "fallback",
-    })
+    return NextResponse.json(result)
   } catch (error) {
     console.error("Chat API error:", error)
     return NextResponse.json(
       {
-        response: "I'm having a moment of stage fright! Please try again, and let's create some magic together.",
-        timestamp: new Date().toISOString(),
+        response: "I'm having a moment of stage fright! Let's try that scene again.",
         source: "error",
       },
-      { status: 200 },
-    ) // Return 200 so the chat doesn't break
+      { status: 500 },
+    )
   }
 }

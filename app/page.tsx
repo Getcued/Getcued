@@ -1,88 +1,41 @@
-"use client"
-
-import { useState } from "react"
-import { Header } from "@/components/header"
 import { GradientHeadline } from "@/components/gradient-headline"
 import { Subheadline } from "@/components/subheadline"
-import { SpotlightEffect } from "@/components/spotlight-effect"
-import { PageWrapper } from "@/components/page-wrapper"
 import { ChatInterface } from "@/components/chat-interface"
-import { ConversationsSidebar } from "@/components/conversations-sidebar"
-import { MobileSidebarToggle } from "@/components/mobile-sidebar-toggle"
-import { ComingSoonSection } from "@/components/coming-soon-section"
 import { FeaturesPreview } from "@/components/features-preview"
+import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
-import { useConversations } from "@/hooks/use-conversations"
+import { SpotlightEffect } from "@/components/spotlight-effect"
 
 export default function Home() {
-  const [showConversationsSidebar, setShowConversationsSidebar] = useState(false)
-
-  const {
-    conversations,
-    currentConversationId,
-    switchToConversation,
-    startNewConversation,
-    deleteConversation,
-    renameConversation,
-    clearAllConversations,
-  } = useConversations()
-
-  const hasConversations = conversations.length > 0
-  const hasActiveConversation = currentConversationId !== null
-
-  const handleConversationStart = () => {
-    setShowConversationsSidebar(true)
-  }
-
   return (
-    <>
+    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+      {/* Spotlight Effect */}
+      <SpotlightEffect />
+
+      {/* Header */}
       <Header />
-      <MobileSidebarToggle />
-      <div className="flex min-h-screen bg-black text-white">
-        {/* Conversations Sidebar - Show when there are conversations */}
-        {(hasConversations || showConversationsSidebar) && (
-          <div className="hidden lg:block">
-            <ConversationsSidebar
-              conversations={conversations}
-              currentConversationId={currentConversationId}
-              onSelectConversation={switchToConversation}
-              onNewConversation={startNewConversation}
-              onDeleteConversation={deleteConversation}
-              onRenameConversation={renameConversation}
-              onClearAll={clearAllConversations}
-            />
+
+      {/* Main Content */}
+      <main className="relative z-10">
+        {/* Hero Section */}
+        <section className="min-h-screen flex flex-col items-center justify-center px-4 pt-20">
+          <div className="text-center space-y-8 max-w-4xl mx-auto">
+            <GradientHeadline />
+            <Subheadline />
           </div>
-        )}
+        </section>
 
-        {/* Main Content */}
-        <main className="flex-1 flex flex-col items-center justify-center overflow-hidden relative pt-20">
-          <SpotlightEffect />
-          <PageWrapper>
-            <div className="container flex flex-col items-center justify-center px-4 py-8 text-center z-10 max-w-6xl">
-              {/* Hero Section - Hide when actively chatting */}
-              {!hasActiveConversation && (
-                <>
-                  <div className="space-y-4 mb-12">
-                    <GradientHeadline />
-                    <Subheadline />
-                  </div>
-                </>
-              )}
+        {/* Features Section */}
+        <FeaturesPreview />
 
-              {/* Main Chat Interface */}
-              <ChatInterface onConversationStart={handleConversationStart} />
+        {/* Chat Interface Section */}
+        <section className="py-20 px-4">
+          <ChatInterface />
+        </section>
+      </main>
 
-              {/* Email Signup Section - Only show when no active conversation */}
-              {!hasActiveConversation && <ComingSoonSection />}
-
-              {/* Features Preview - Only show when no active conversation */}
-              {!hasActiveConversation && <FeaturesPreview />}
-            </div>
-          </PageWrapper>
-        </main>
-      </div>
-      {/* Footer - Only show when no active conversation */}
-      {!hasActiveConversation && <Footer />}
-    </>
+      {/* Footer */}
+      <Footer />
+    </div>
   )
 }
