@@ -1,90 +1,98 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 
 interface EmojiReactionsProps {
-  trigger: boolean
-  messageContent: string
+  message: string
 }
 
-const getContextualEmoji = (message: string): string => {
-  if (!message || typeof message !== "string") return "🎭"
-
-  const lowerMessage = message.toLowerCase()
-
+const emojiMap: Record<string, string[]> = {
   // Shakespeare plays
-  if (lowerMessage.includes("hamlet")) return "💀"
-  if (lowerMessage.includes("romeo") || lowerMessage.includes("juliet")) return "💕"
-  if (lowerMessage.includes("macbeth")) return "⚔️"
-  if (lowerMessage.includes("othello")) return "🗡️"
-  if (lowerMessage.includes("king lear")) return "👑"
-  if (lowerMessage.includes("midsummer")) return "🧚"
+  romeo: ["🌹", "💕", "🌙"],
+  juliet: ["🌹", "💕", "⭐"],
+  hamlet: ["💀", "👑", "⚔️"],
+  macbeth: ["👑", "🗡️", "🩸"],
+  othello: ["💔", "😡", "🎭"],
+  lear: ["👑", "⚡", "😢"],
 
-  // Other classic plays
-  if (lowerMessage.includes("streetcar")) return "🚋"
-  if (lowerMessage.includes("death of a salesman")) return "💼"
-  if (lowerMessage.includes("glass menagerie")) return "🦄"
-  if (lowerMessage.includes("cherry orchard")) return "🍒"
-  if (lowerMessage.includes("waiting for godot")) return "⏰"
+  // Theater terms
+  stage: ["🎭", "🎪", "✨"],
+  performance: ["🎭", "👏", "🌟"],
+  rehearse: ["🎭", "📝", "💪"],
+  scene: ["🎬", "🎭", "✨"],
+  character: ["🎭", "🎪", "🌟"],
+  monologue: ["🎤", "🎭", "💬"],
+  dialogue: ["💬", "🎭", "🗣️"],
 
-  // Emotions and themes
-  if (lowerMessage.includes("love") || lowerMessage.includes("romance")) return "💖"
-  if (lowerMessage.includes("death") || lowerMessage.includes("tragedy")) return "⚰️"
-  if (lowerMessage.includes("comedy") || lowerMessage.includes("funny")) return "😂"
-  if (lowerMessage.includes("anger") || lowerMessage.includes("rage")) return "🔥"
-  if (lowerMessage.includes("fear") || lowerMessage.includes("scared")) return "😰"
-  if (lowerMessage.includes("joy") || lowerMessage.includes("happy")) return "✨"
-  if (lowerMessage.includes("sad") || lowerMessage.includes("sorrow")) return "😢"
-
-  // Acting terms
-  if (lowerMessage.includes("monologue")) return "🎤"
-  if (lowerMessage.includes("scene")) return "🎬"
-  if (lowerMessage.includes("character")) return "🎭"
-  if (lowerMessage.includes("rehearse") || lowerMessage.includes("practice")) return "🎯"
-  if (lowerMessage.includes("audition")) return "🎪"
-  if (lowerMessage.includes("stage")) return "🎪"
-  if (lowerMessage.includes("performance")) return "⭐"
-
-  return "🎭"
+  // Emotions
+  love: ["💕", "❤️", "💖"],
+  death: ["💀", "⚰️", "🖤"],
+  anger: ["😡", "🔥", "💢"],
+  joy: ["😊", "🌟", "✨"],
+  sadness: ["😢", "💧", "💔"],
 }
 
-export default function EmojiReactions({ trigger, messageContent }: EmojiReactionsProps) {
-  const [showEmoji, setShowEmoji] = useState(false)
-  const [currentEmoji, setCurrentEmoji] = useState("🎭")
+export default function EmojiReactions({ message }: EmojiReactionsProps) {
+  const [emojis, setEmojis] = useState<Array<{ id: string; emoji: string; x: number; y: number }>>([])
 
   useEffect(() => {
-    if (trigger && messageContent) {
-      const emoji = getContextualEmoji(messageContent)
-      setCurrentEmoji(emoji)
-      setShowEmoji(true)
+    const lowerMessage = message.toLowerCase()
+    const triggeredEmojis: string[] = []
 
-      const timer = setTimeout(() => {
-        setShowEmoji(false)
-      }, 2000)
+    // Check for keywords in the message
+    Object.entries(emojiMap).forEach(([keyword, emojiList]) => {
+      if (lowerMessage.includes(keyword)) {
+        triggeredEmojis.push(...emojiList)
+      }
+    })
 
-      return () => clearTimeout(timer)
+    // Remove duplicates and limit to 3 emojis
+    const uniqueEmojis = [...new Set(triggeredEmojis)].slice(0, 3)
+
+    if (uniqueEmojis.length > 0) {
+      const newEmojis = uniqueEmojis.map((emoji, index) => ({
+        id: `${Date.now()}-${index}`,
+        emoji,
+        x: Math.random() * 100,
+        y: Math.random() * 50,
+      }))
+
+      setEmojis(newEmojis)
+
+      // Clear emojis after animation
+      setTimeout(() => {
+        setEmojis([])
+      }, 3000)
     }
-  }, [trigger, messageContent])
+  }, [message])
 
   return (
-    <AnimatePresence>
-      {showEmoji && (
-        <motion.div
-          initial={{ scale: 0, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0, opacity: 0, y: -20 }}
-          transition={{
-            type: "spring",
-            stiffness: 500,
-            damping: 25,
-            duration: 0.3,
-          }}
-          className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-none"
-        >
-          <div className="text-6xl filter drop-shadow-lg">{currentEmoji}</div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <div className="relative">
+      <AnimatePresence>
+        {emojis.map((emojiObj) => (
+          <motion.div
+            key={emojiObj.id}
+            initial={{ opacity: 0, scale: 0, x: emojiObj.x, y: emojiObj.y }}
+            animate={{
+              opacity: 1,
+              scale: [0, 1.2, 1],
+              y: emojiObj.y - 30,
+              rotate: [0, 10, -10, 0],
+            }}
+            exit={{ opacity: 0, scale: 0, y: emojiObj.y - 60 }}
+            transition={{
+              duration: 2.5,
+              ease: "easeOut",
+              scale: { times: [0, 0.3, 1], duration: 0.5 },
+            }}
+            className="absolute text-2xl pointer-events-none z-10"
+            style={{ left: `${emojiObj.x}%`, top: `${emojiObj.y}%` }}
+          >
+            {emojiObj.emoji}
+          </motion.div>
+        ))}
+      </AnimatePresence>
+    </div>
   )
 }
