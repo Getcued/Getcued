@@ -1,7 +1,7 @@
 "use client"
 
-import { motion } from "framer-motion"
 import Link from "next/link"
+import { motion } from "framer-motion"
 
 export function Header() {
   return (
@@ -9,14 +9,14 @@ export function Header() {
       className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-gray-800/50"
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8 }}
+      transition={{ duration: 0.6 }}
     >
-      <div className="max-w-7xl mx-auto px-4 py-4">
-        <div className="flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="group">
+          <Link href="/" className="flex items-center space-x-2 group">
             <motion.div
-              className="text-2xl font-bold bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 bg-clip-text text-transparent"
+              className="text-2xl font-bold bg-gradient-to-r from-pink-400 via-purple-500 to-orange-400 bg-clip-text text-transparent"
               whileHover={{ scale: 1.05 }}
               transition={{ type: "spring", stiffness: 400, damping: 10 }}
             >
@@ -32,18 +32,18 @@ export function Header() {
             <Link href="#how-it-works" className="text-gray-300 hover:text-white transition-colors duration-200">
               How It Works
             </Link>
-            <Link href="#pricing" className="text-gray-300 hover:text-white transition-colors duration-200">
-              Pricing
+            <Link href="#testimonials" className="text-gray-300 hover:text-white transition-colors duration-200">
+              Reviews
             </Link>
           </nav>
 
           {/* CTA Button */}
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Link
-              href="#get-started"
-              className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-medium px-6 py-2 rounded-full transition-all duration-200"
+              href="#chat"
+              className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-6 py-2 rounded-full font-medium transition-all duration-200"
             >
-              Get Started
+              Start Rehearsing
             </Link>
           </motion.div>
         </div>

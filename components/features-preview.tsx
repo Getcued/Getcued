@@ -1,52 +1,69 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Upload, MessageCircle, Sparkles, ArrowDown } from "lucide-react"
+import { Mic, MessageSquare, Upload, Sparkles, Theater, Users, Brain } from "lucide-react"
 
-const steps = [
+const features = [
   {
-    number: "01",
-    title: "Upload Your Script",
-    description:
-      "Upload any script or choose from our curated collection of classic and contemporary plays. Our AI instantly analyzes character motivations, scene dynamics, and emotional beats.",
+    icon: MessageSquare,
+    title: "AI Scene Partner",
+    description: "Practice with an intelligent AI that adapts to any character, play, or scene you want to rehearse.",
+    color: "from-pink-500 to-purple-600",
+  },
+  {
+    icon: Mic,
+    title: "Voice Interaction",
+    description: "Speak your lines naturally and hear AI responses with realistic voice synthesis.",
+    color: "from-purple-500 to-blue-600",
+  },
+  {
     icon: Upload,
-    features: ["Instant script analysis", "Character breakdown", "Scene identification", "Emotional mapping"],
+    title: "Script Upload",
+    description: "Upload your scripts and get line-by-line coaching with character insights and direction.",
+    color: "from-blue-500 to-cyan-600",
   },
   {
-    number: "02",
+    icon: Brain,
+    title: "Memory & Progress",
+    description: "AI remembers your preferences, tracks progress, and suggests personalized exercises.",
+    color: "from-cyan-500 to-green-600",
+  },
+]
+
+const howItWorks = [
+  {
+    step: "1",
+    icon: Theater,
+    title: "Choose Your Scene",
+    description: "Select from classic plays, upload your own script, or describe what you want to rehearse.",
+  },
+  {
+    step: "2",
+    icon: Users,
     title: "Start Rehearsing",
-    description:
-      "Begin your scene with AI as your scene partner. Practice dialogue, work on character development, or focus on specific acting techniques with real-time coaching and feedback.",
-    icon: MessageCircle,
-    features: ["Real-time scene partnership", "Character coaching", "Dialogue practice", "Acting technique guidance"],
+    description: "Speak your lines naturally while AI plays other characters and provides real-time coaching.",
   },
   {
-    number: "03",
-    title: "Get Personalized Feedback",
-    description:
-      "Receive detailed feedback on your performance, including suggestions for character choices, emotional depth, and technical improvements. Track your progress over time.",
+    step: "3",
     icon: Sparkles,
-    features: ["Performance analysis", "Character development tips", "Progress tracking", "Personalized coaching"],
+    title: "Get Better",
+    description: "Receive personalized feedback, character insights, and suggestions to improve your performance.",
   },
 ]
 
 export function FeaturesPreview() {
   const scrollToChat = () => {
-    const chatElement = document.querySelector("[data-chat-interface]")
+    const chatElement = document.querySelector('[data-chat-interface]')
     if (chatElement) {
-      chatElement.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      })
+      chatElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
   }
 
   return (
     <section className="py-20 px-4">
       <div className="max-w-6xl mx-auto">
-        {/* Section Header */}
+        {/* Features Section */}
         <motion.div
           className="text-center mb-16"
           initial={{ opacity: 0, y: 20 }}
@@ -54,112 +71,77 @@ export function FeaturesPreview() {
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">How It Works</h2>
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-            Get professional-level rehearsal coaching in three simple steps. Our AI understands theater, character
-            development, and performance techniques.
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+            Your AI-Powered Rehearsal Studio
+          </h2>
+          <p className="text-gray-300 text-lg max-w-2xl mx-auto">
+            Experience the future of acting practice with intelligent coaching, voice interaction, and personalized feedback.
           </p>
         </motion.div>
 
-        {/* Steps */}
-        <div className="space-y-16">
-          {steps.map((step, index) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
+          {features.map((feature, index) => (
             <motion.div
-              key={step.number}
-              initial={{ opacity: 0, y: 40 }}
+              key={feature.title}
+              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: index * 0.2 }}
+              transition={{ duration: 0.6, delay: index * 0.1 }}
               viewport={{ once: true }}
-              className={`flex flex-col ${index % 2 === 0 ? "lg:flex-row" : "lg:flex-row-reverse"} items-center gap-12`}
             >
-              {/* Content */}
-              <div className="flex-1 space-y-6">
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-pink-500 to-purple-600">
-                    <step.icon className="w-8 h-8 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-mono text-pink-400 mb-1">STEP {step.number}</div>
-                    <h3 className="text-2xl md:text-3xl font-bold text-white">{step.title}</h3>
-                  </div>
-                </div>
-
-                <p className="text-lg text-gray-300 leading-relaxed">{step.description}</p>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {step.features.map((feature, featureIndex) => (
-                    <div key={featureIndex} className="flex items-center space-x-2 text-gray-400">
-                      <div className="w-1.5 h-1.5 rounded-full bg-pink-400" />
-                      <span className="text-sm">{feature}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Visual */}
-              <div className="flex-1">
-                <Card className="bg-gray-900/50 border-gray-800 overflow-hidden">
-                  <CardContent className="p-8">
-                    <div className="aspect-video bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg flex items-center justify-center">
-                      <motion.div
-                        className="text-6xl"
-                        animate={{
-                          scale: [1, 1.1, 1],
-                          rotate: [0, 5, -5, 0],
-                        }}
-                        transition={{
-                          duration: 3,
-                          repeat: Number.POSITIVE_INFINITY,
-                          ease: "easeInOut",
-                        }}
-                      >
-                        <step.icon className="w-16 h-16 text-pink-400" />
-                      </motion.div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+              <Card className="bg-gray-900/50 border-gray-800 hover:border-gray-700 transition-all duration-300 h-full">
+                <CardContent className="p-6">
+                  <motion.div
+                    className={`w-12 h-12 rounded-lg bg-gradient-to-r ${feature.color} flex items-center justify-center mb-4`}
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                  >
+                    <feature.icon className="w-6 h-6 text-white" />
+                  </motion.div>
+                  <h3 className="text-white font-semibold mb-2">{feature.title}</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">{feature.description}</p>
+                </CardContent>
+              </Card>
             </motion.div>
           ))}
         </div>
 
-        {/* Call to Action */}
+        {/* How It Works Section */}
         <motion.div
-          className="text-center mt-20"
+          id="how-it-works"
+          className="text-center mb-16"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
+          transition={{ duration: 0.8 }}
           viewport={{ once: true }}
         >
-          <div className="space-y-6">
-            <h3 className="text-2xl md:text-3xl font-bold text-white">Ready to Start Rehearsing?</h3>
-            <p className="text-lg text-gray-300 max-w-2xl mx-auto">
-              Join thousands of actors who are already using Cued to improve their craft. Start your first scene in
-              seconds.
-            </p>
-
-            <div className="flex flex-col items-center space-y-4">
-              <Button
-                onClick={scrollToChat}
-                size="lg"
-                className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold px-8 py-4 text-lg rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-              >
-                Let's Get Started
-                <ArrowDown className="ml-2 w-5 h-5" />
-              </Button>
-
-              <motion.div
-                className="flex items-center space-x-2 text-gray-400 text-sm"
-                animate={{ y: [0, 5, 0] }}
-                transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
-              >
-                <ArrowDown className="w-4 h-4" />
-                <span>Scroll down to begin your first scene</span>
-              </motion.div>
-            </div>
-          </div>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+            How It Works
+          </h2>
+          <p className="text-gray-300 text-lg max-w-2xl mx-auto">
+            Get started in three simple steps and transform your acting practice.
+          </p>
         </motion.div>
-      </div>
-    </section>
-  )
-}
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+          {howItWorks.map((step, index) => (
+            <motion.div
+              key={step.step}
+              className="text-center"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: index * 0.2 }}
+              viewport={{ once: true }}
+            >
+              <motion.div
+                className="relative mb-6"
+                whileHover={{ scale: 1.05 }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+              >
+                <div className="w-20 h-20 mx-auto bg-gradient-to-r from-pink-500 to-purple-600 rounded-full flex items-center justify-center mb-4">
+                  <step.icon className="w-10 h-10 text-white" />
+                </div>
+                <div className="absolute -top-2 -right-2 w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                  {step.step}
+                </div>
+              </motion.div>
+              <h3\
