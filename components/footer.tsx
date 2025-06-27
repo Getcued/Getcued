@@ -10,7 +10,7 @@ const TikTokIcon = ({ className }: { className?: string }) => (
   </svg>
 )
 
-// Add custom X icon after the TikTok icon:
+// Custom X icon
 const XIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
@@ -130,10 +130,7 @@ export function Footer() {
                 <Mail className="w-5 h-5" />
               </a>
             </div>
-            <p className="text-xs text-gray-500">
-              Getcuedai@gmail.com
-              <br />
-            </p>
+            <p className="text-xs text-gray-500">Getcuedai@gmail.com</p>
           </div>
         </div>
 

@@ -1,61 +1,46 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { generateText } from "ai"
-import { openai } from "@ai-sdk/openai"
-
-const SYSTEM_PROMPT = `You are Cued, an AI rehearsal partner for actors and performers. You help actors practice scenes, work on character development, and improve their craft.
-
-Key guidelines:
-- Be encouraging and supportive while providing constructive feedback
-- Adapt to any character, script, or acting style the user wants to practice
-- Provide specific, actionable advice on delivery, emotion, and technique
-- Remember context from the conversation to build on previous work
-- Use theater and acting terminology appropriately
-- Be enthusiastic about the craft of acting
-- If they mention a specific play or character, show knowledge of it
-- Offer to run lines, work on character motivation, or practice specific scenes
-- Keep responses conversational but professional
-
-Remember: You're not just answering questions - you're actively helping them rehearse and improve their performance.`
-
-interface Message {
-  id: string
-  content: string
-  sender: "user" | "ai"
-  timestamp: Date
-}
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, history } = await request.json()
+    const body = await request.json()
+    const { message, messages } = body
 
-    if (!message) {
+    if (!message && (!messages || messages.length === 0)) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 })
     }
 
-    // Build conversation context
-    let conversationContext = ""
-    if (history && Array.isArray(history)) {
-      const recentHistory = history.slice(-6) // Last 6 messages for context
-      conversationContext = recentHistory
-        .map((msg: Message) => `${msg.sender === "user" ? "Actor" : "Cued"}: ${msg.content}`)
-        .join("\n")
+    // Simple AI response logic for demo
+    const getAIResponse = (userMessage: string): string => {
+      const msg = userMessage.toLowerCase()
+
+      if (msg.includes("romeo") || msg.includes("juliet") || msg.includes("balcony")) {
+        return "Perfect choice! Let's work on the balcony scene. I'll play Romeo to your Juliet, or vice versa. Which character would you like to embody? Let's start with 'But soft, what light through yonder window breaks?' Remember to convey the longing and conflict in her voice."
+      }
+
+      if (msg.includes("hamlet") || msg.includes("to be or not to be")) {
+        return "Excellent! Hamlet's most famous soliloquy. This is about life, death, and the fear of the unknown. Start slowly, build the internal conflict. Begin when you're ready: 'To be or not to be, that is the question...'"
+      }
+
+      if (msg.includes("macbeth") || msg.includes("lady macbeth") || msg.includes("sleepwalking")) {
+        return "Great choice! Lady Macbeth's sleepwalking scene shows her guilt consuming her. She's reliving the murders. Start with fragmented, haunted delivery: 'Out, damned spot! Out, I say!' Focus on the psychological breakdown."
+      }
+
+      if (msg.includes("streetcar") || msg.includes("blanche")) {
+        return "Powerful scene! Blanche's final moments show her complete break from reality. She's clinging to illusion as her last defense. Begin with vulnerability: 'I have always depended on the kindness of strangers.'"
+      }
+
+      if (msg.includes("practice") || msg.includes("rehearse")) {
+        return "I'm excited to be your rehearsal partner! Whether you want to work on classical Shakespeare, contemporary drama, or anything in between, I'm here to help. What specific scene or monologue would you like to practice today?"
+      }
+
+      return "I'm here to help you rehearse and perfect your craft! Tell me what scene you'd like to work on, upload a script, or choose from some popular classics. I can play any character and give you detailed feedback on your performance."
     }
 
-    const fullPrompt = conversationContext
-      ? `Previous conversation:\n${conversationContext}\n\nActor: ${message}`
-      : `Actor: ${message}`
+    const response = getAIResponse(message || messages[messages.length - 1]?.content || "")
 
-    const { text } = await generateText({
-      model: openai("gpt-4o"),
-      system: SYSTEM_PROMPT,
-      prompt: fullPrompt,
-      maxTokens: 500,
-      temperature: 0.7,
-    })
-
-    return NextResponse.json({ message: text })
+    return NextResponse.json({ message: response })
   } catch (error) {
     console.error("Chat API error:", error)
-    return NextResponse.json({ error: "Failed to generate response" }, { status: 500 })
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

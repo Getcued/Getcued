@@ -2,6 +2,7 @@
 const nextConfig = {
   experimental: {
     serverActions: true,
+    optimizePackageImports: ['lucide-react']
   },
   eslint: {
     ignoreDuringBuilds: true,
