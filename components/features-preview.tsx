@@ -1,8 +1,9 @@
 "use client"
 
 import { motion } from "framer-motion"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Mic, MessageSquare, Upload, Sparkles, Theater, Users, Brain } from "lucide-react"
+import { Mic, MessageSquare, Upload, Sparkles, Theater, Users, Brain, ArrowDown } from "lucide-react"
 
 const features = [
   {
@@ -54,9 +55,9 @@ const howItWorks = [
 
 export function FeaturesPreview() {
   const scrollToChat = () => {
-    const chatElement = document.querySelector('[data-chat-interface]')
+    const chatElement = document.querySelector("[data-chat-interface]")
     if (chatElement) {
-      chatElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      chatElement.scrollIntoView({ behavior: "smooth", block: "start" })
     }
   }
 
@@ -71,11 +72,10 @@ export function FeaturesPreview() {
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            Your AI-Powered Rehearsal Studio
-          </h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Your AI-Powered Rehearsal Studio</h2>
           <p className="text-gray-300 text-lg max-w-2xl mx-auto">
-            Experience the future of acting practice with intelligent coaching, voice interaction, and personalized feedback.
+            Experience the future of acting practice with intelligent coaching, voice interaction, and personalized
+            feedback.
           </p>
         </motion.div>
 
@@ -114,9 +114,7 @@ export function FeaturesPreview() {
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            How It Works
-          </h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">How It Works</h2>
           <p className="text-gray-300 text-lg max-w-2xl mx-auto">
             Get started in three simple steps and transform your acting practice.
           </p>
@@ -144,4 +142,36 @@ export function FeaturesPreview() {
                   {step.step}
                 </div>
               </motion.div>
-              <h3\
+              <h3 className="text-xl font-semibold text-white mb-3">{step.title}</h3>
+              <p className="text-gray-400 leading-relaxed">{step.description}</p>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Call to Action */}
+        <motion.div
+          className="text-center"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+          viewport={{ once: true }}
+        >
+          <div className="bg-gradient-to-r from-pink-500/10 to-purple-600/10 border border-pink-500/20 rounded-2xl p-8 max-w-2xl mx-auto">
+            <h3 className="text-2xl font-bold text-white mb-4">Ready to Start Rehearsing?</h3>
+            <p className="text-gray-300 mb-6">
+              Jump into your first scene and experience the magic of AI-powered rehearsals.
+            </p>
+            <Button
+              onClick={scrollToChat}
+              size="lg"
+              className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold px-8 py-3"
+            >
+              Let's Get Started
+              <ArrowDown className="ml-2 w-4 h-4" />
+            </Button>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  )
+}
