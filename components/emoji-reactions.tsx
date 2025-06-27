@@ -7,92 +7,76 @@ interface EmojiReactionsProps {
   message: string
 }
 
-const emojiMap: Record<string, string[]> = {
+const getContextualEmojis = (message: string): string[] => {
+  const text = message.toLowerCase()
+
   // Shakespeare plays
-  romeo: ["🌹", "💕", "🌙"],
-  juliet: ["🌹", "💕", "⭐"],
-  hamlet: ["💀", "👑", "⚔️"],
-  macbeth: ["👑", "🗡️", "🩸"],
-  othello: ["💔", "😡", "🎭"],
-  lear: ["👑", "⚡", "😢"],
+  if (text.includes("romeo") || text.includes("juliet")) return ["🌹", "💕", "🌙"]
+  if (text.includes("hamlet")) return ["💀", "👑", "⚔️"]
+  if (text.includes("macbeth")) return ["🗡️", "👑", "🩸"]
+  if (text.includes("othello")) return ["💔", "🎭", "⚔️"]
 
   // Theater terms
-  stage: ["🎭", "🎪", "✨"],
-  performance: ["🎭", "👏", "🌟"],
-  rehearse: ["🎭", "📝", "💪"],
-  scene: ["🎬", "🎭", "✨"],
-  character: ["🎭", "🎪", "🌟"],
-  monologue: ["🎤", "🎭", "💬"],
-  dialogue: ["💬", "🎭", "🗣️"],
+  if (text.includes("stage") || text.includes("perform")) return ["🎭", "🎪", "✨"]
+  if (text.includes("rehearse") || text.includes("practice")) return ["🎯", "💪", "🎭"]
+  if (text.includes("scene") || text.includes("act")) return ["🎬", "🎭", "📜"]
+  if (text.includes("character")) return ["🎭", "🎪", "👤"]
 
   // Emotions
-  love: ["💕", "❤️", "💖"],
-  death: ["💀", "⚰️", "🖤"],
-  anger: ["😡", "🔥", "💢"],
-  joy: ["😊", "🌟", "✨"],
-  sadness: ["😢", "💧", "💔"],
+  if (text.includes("love") || text.includes("heart")) return ["❤️", "💕", "💖"]
+  if (text.includes("death") || text.includes("die")) return ["💀", "⚰️", "🖤"]
+  if (text.includes("anger") || text.includes("rage")) return ["😡", "🔥", "⚡"]
+  if (text.includes("joy") || text.includes("happy")) return ["😊", "🌟", "✨"]
+
+  // Default theater emojis
+  return ["🎭", "✨", "🎪"]
 }
 
 export default function EmojiReactions({ message }: EmojiReactionsProps) {
-  const [emojis, setEmojis] = useState<Array<{ id: string; emoji: string; x: number; y: number }>>([])
+  const [showEmojis, setShowEmojis] = useState(false)
+  const [emojis, setEmojis] = useState<string[]>([])
 
   useEffect(() => {
-    const lowerMessage = message.toLowerCase()
-    const triggeredEmojis: string[] = []
+    const contextEmojis = getContextualEmojis(message)
+    setEmojis(contextEmojis)
 
-    // Check for keywords in the message
-    Object.entries(emojiMap).forEach(([keyword, emojiList]) => {
-      if (lowerMessage.includes(keyword)) {
-        triggeredEmojis.push(...emojiList)
-      }
-    })
+    const timer = setTimeout(() => {
+      setShowEmojis(true)
+    }, 500)
 
-    // Remove duplicates and limit to 3 emojis
-    const uniqueEmojis = [...new Set(triggeredEmojis)].slice(0, 3)
+    const hideTimer = setTimeout(() => {
+      setShowEmojis(false)
+    }, 3000)
 
-    if (uniqueEmojis.length > 0) {
-      const newEmojis = uniqueEmojis.map((emoji, index) => ({
-        id: `${Date.now()}-${index}`,
-        emoji,
-        x: Math.random() * 100,
-        y: Math.random() * 50,
-      }))
-
-      setEmojis(newEmojis)
-
-      // Clear emojis after animation
-      setTimeout(() => {
-        setEmojis([])
-      }, 3000)
+    return () => {
+      clearTimeout(timer)
+      clearTimeout(hideTimer)
     }
   }, [message])
 
   return (
-    <div className="relative">
-      <AnimatePresence>
-        {emojis.map((emojiObj) => (
-          <motion.div
-            key={emojiObj.id}
-            initial={{ opacity: 0, scale: 0, x: emojiObj.x, y: emojiObj.y }}
-            animate={{
-              opacity: 1,
-              scale: [0, 1.2, 1],
-              y: emojiObj.y - 30,
-              rotate: [0, 10, -10, 0],
-            }}
-            exit={{ opacity: 0, scale: 0, y: emojiObj.y - 60 }}
-            transition={{
-              duration: 2.5,
-              ease: "easeOut",
-              scale: { times: [0, 0.3, 1], duration: 0.5 },
-            }}
-            className="absolute text-2xl pointer-events-none z-10"
-            style={{ left: `${emojiObj.x}%`, top: `${emojiObj.y}%` }}
-          >
-            {emojiObj.emoji}
-          </motion.div>
-        ))}
-      </AnimatePresence>
-    </div>
+    <AnimatePresence>
+      {showEmojis && (
+        <motion.div
+          className="flex space-x-1 mt-2"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          transition={{ duration: 0.3 }}
+        >
+          {emojis.map((emoji, index) => (
+            <motion.span
+              key={index}
+              className="text-lg"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              {emoji}
+            </motion.span>
+          ))}
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }

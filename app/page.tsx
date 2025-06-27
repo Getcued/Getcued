@@ -1,5 +1,5 @@
-import GradientHeadline from "@/components/gradient-headline"
-import Header from "@/components/header"
+import { GradientHeadline } from "@/components/gradient-headline"
+import { Header } from "@/components/header"
 import FeaturesPreview from "@/components/features-preview"
 import ChatInterface from "@/components/chat-interface"
 
@@ -19,11 +19,9 @@ export default function HomePage() {
       {/* Features Section */}
       <FeaturesPreview />
 
-      {/* Chat Interface Section */}
-      <section id="chat-section" className="py-20 px-4">
-        <div className="max-w-4xl mx-auto">
-          <ChatInterface />
-        </div>
+      {/* Chat Interface */}
+      <section id="chat-section" className="py-20">
+        <ChatInterface />
       </section>
     </div>
   )
