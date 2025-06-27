@@ -56,10 +56,11 @@ export function VoiceSettings({ voices, selectedVoice, onVoiceChange, onTestVoic
     <>
       <Button
         ref={triggerRef}
+        type="button"
         variant="ghost"
         size="sm"
         onClick={() => setIsVisible(!isVisible)}
-        className="text-gray-400 hover:text-white relative"
+        className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800/50 transition-colors relative"
         aria-label="Voice Settings"
       >
         <Settings className="w-4 h-4" />

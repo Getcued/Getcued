@@ -2,38 +2,26 @@
 
 import { useState, useEffect, useCallback } from "react"
 
-export interface ChatMessage {
+export interface Message {
   id: string
   content: string
-  isUser: boolean
+  sender: "user" | "ai"
   timestamp: Date
-  source?: string
 }
 
 export interface Conversation {
   id: string
-  title: string
-  messages: ChatMessage[]
+  messages: Message[]
   createdAt: Date
   updatedAt: Date
-  preview: string
-  lastCharacter?: string
-  lastPlay?: string
-  lastGenre?: string
-  rehearsalType?: string
 }
 
-export interface CuedMemory {
-  lastCharacter?: string
-  lastPlay?: string
-  lastGenre?: string
-  rehearsalType?: string
-  favoriteScenes: string[]
-  recentPlays: string[]
-  favoriteGenres: string[]
+export interface Memory {
   totalSessions: number
-  lastSessionDate?: Date
-  hasSeenOnboarding: boolean
+  lastPlay?: string
+  lastCharacter?: string
+  lastGenre?: string
+  preferences: string[]
 }
 
 const STORAGE_KEY = "cued-conversations"
@@ -42,13 +30,11 @@ const MEMORY_KEY = "cued-memory"
 export function useConversations() {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null)
-  const [memory, setMemory] = useState<CuedMemory>({
-    favoriteScenes: [],
-    recentPlays: [],
-    favoriteGenres: [],
+  const [memory, setMemory] = useState<Memory>({
     totalSessions: 0,
-    hasSeenOnboarding: false,
+    preferences: [],
   })
+  const [isLoading, setIsLoading] = useState(true)
 
   // Load conversations and memory from localStorage on mount
   useEffect(() => {
@@ -73,11 +59,8 @@ export function useConversations() {
       if (savedMemory) {
         const parsedMemory = JSON.parse(savedMemory)
         setMemory({
-          favoriteScenes: [],
-          recentPlays: [],
-          favoriteGenres: [],
           totalSessions: 0,
-          hasSeenOnboarding: false,
+          preferences: [],
           ...parsedMemory,
           lastSessionDate: parsedMemory.lastSessionDate ? new Date(parsedMemory.lastSessionDate) : undefined,
         })
@@ -85,6 +68,7 @@ export function useConversations() {
     } catch (error) {
       console.error("Failed to load conversations or memory:", error)
     }
+    setIsLoading(false)
   }, [])
 
   // Save conversations to localStorage whenever they change
@@ -97,7 +81,7 @@ export function useConversations() {
   }, [])
 
   // Save memory to localStorage
-  const saveMemory = useCallback((mem: CuedMemory) => {
+  const saveMemory = useCallback((mem: Memory) => {
     try {
       localStorage.setItem(MEMORY_KEY, JSON.stringify(mem))
       setMemory(mem)
@@ -181,59 +165,38 @@ export function useConversations() {
 
   // Create a new conversation
   const createConversation = useCallback(
-    (firstMessage: ChatMessage): string => {
-      const id = Date.now().toString()
-      const title = generateTitle(firstMessage.content)
-      const preview = firstMessage.content.substring(0, 100) + (firstMessage.content.length > 100 ? "..." : "")
-
-      // Extract memory information
-      const memoryInfo = extractMemoryFromMessage(firstMessage.content)
-
+    (initialMessage: Message) => {
       const newConversation: Conversation = {
-        id,
-        title,
-        messages: [firstMessage],
+        id: Date.now().toString(),
+        messages: [initialMessage],
         createdAt: new Date(),
         updatedAt: new Date(),
-        preview,
-        ...memoryInfo,
       }
 
-      const updatedConversations = [newConversation, ...conversations]
+      const updatedConversations = [...conversations, newConversation]
       setConversations(updatedConversations)
-      setCurrentConversationId(id)
+      setCurrentConversationId(newConversation.id)
       saveConversations(updatedConversations)
 
       // Update memory
-      const updatedMemory: CuedMemory = {
-        ...memory,
-        ...memoryInfo,
-        totalSessions: memory.totalSessions + 1,
-        lastSessionDate: new Date(),
-        recentPlays: memoryInfo.play
-          ? [memoryInfo.play, ...memory.recentPlays.filter((p) => p !== memoryInfo.play)].slice(0, 5)
-          : memory.recentPlays,
-        favoriteGenres:
-          memoryInfo.genre && !memory.favoriteGenres.includes(memoryInfo.genre)
-            ? [...memory.favoriteGenres, memoryInfo.genre]
-            : memory.favoriteGenres,
-      }
-      saveMemory(updatedMemory)
+      setMemory((prev) => ({
+        ...prev,
+        totalSessions: prev.totalSessions + 1,
+      }))
 
-      return id
+      return newConversation.id
     },
-    [conversations, generateTitle, saveConversations, extractMemoryFromMessage, memory, saveMemory],
+    [conversations, saveConversations],
   )
 
   // Add message to current conversation
   const addMessage = useCallback(
-    (message: ChatMessage, conversationId?: string) => {
-      const targetId = conversationId || currentConversationId
-      if (!targetId) return
+    (message: Message) => {
+      if (!currentConversationId) return
 
       setConversations((prev) => {
         const updated = prev.map((conv) => {
-          if (conv.id === targetId) {
+          if (conv.id === currentConversationId) {
             const updatedMessages = [...conv.messages, message]
 
             // Update conversation memory if it's a user message
@@ -241,25 +204,22 @@ export function useConversations() {
               ...conv,
               messages: updatedMessages,
               updatedAt: new Date(),
-              preview: message.content.substring(0, 100) + (message.content.length > 100 ? "..." : ""),
             }
 
-            if (message.isUser) {
+            if (message.sender === "user") {
               const memoryInfo = extractMemoryFromMessage(message.content)
               updatedConv = { ...updatedConv, ...memoryInfo }
 
               // Update global memory too
               if (memoryInfo.play || memoryInfo.genre) {
-                const updatedMemory: CuedMemory = {
+                const updatedMemory: Memory = {
                   ...memory,
                   ...memoryInfo,
-                  recentPlays: memoryInfo.play
-                    ? [memoryInfo.play, ...memory.recentPlays.filter((p) => p !== memoryInfo.play)].slice(0, 5)
-                    : memory.recentPlays,
-                  favoriteGenres:
-                    memoryInfo.genre && !memory.favoriteGenres.includes(memoryInfo.genre)
-                      ? [...memory.favoriteGenres, memoryInfo.genre]
-                      : memory.favoriteGenres,
+                  totalSessions: memory.totalSessions + 1,
+                  lastSessionDate: new Date(),
+                  preferences: memoryInfo.play
+                    ? [memoryInfo.play, ...memory.preferences.filter((p) => p !== memoryInfo.play)].slice(0, 5)
+                    : memory.preferences,
                 }
                 saveMemory(updatedMemory)
               }
@@ -278,9 +238,9 @@ export function useConversations() {
   )
 
   // Get current conversation
-  const getCurrentConversation = useCallback((): Conversation | null => {
+  const getCurrentConversation = useCallback(() => {
     if (!currentConversationId) return null
-    return conversations.find((conv) => conv.id === currentConversationId) || null
+    return conversations.find((c) => c.id === currentConversationId) || null
   }, [conversations, currentConversationId])
 
   // Switch to a conversation
@@ -325,46 +285,65 @@ export function useConversations() {
   }, [])
 
   // Get personalized greeting based on memory
-  const getPersonalizedGreeting = useCallback((): string => {
+  const getPersonalizedGreeting = useCallback(() => {
     if (memory.totalSessions === 0) {
-      return "Choose a scene below or describe what you'd like to rehearse."
+      return "Upload a script or choose from our suggestions to begin your first rehearsal."
     }
 
-    const greetings = []
-
-    if (memory.lastCharacter && memory.lastPlay) {
-      greetings.push(
-        `Welcome back! Last time we worked on ${memory.lastCharacter} from ${memory.lastPlay}. Would you like to continue with that character or try something new?`,
-      )
-    } else if (memory.lastCharacter) {
-      greetings.push(
-        `Good to see you again! I remember we were working on the character ${memory.lastCharacter}. Ready to dive deeper into that role?`,
-      )
-    } else if (memory.lastPlay) {
-      greetings.push(
-        `Welcome back! I see we were exploring ${memory.lastPlay} last time. Which character would you like to work on today?`,
-      )
+    if (memory.lastCharacter) {
+      return `Ready to continue with ${memory.lastCharacter} or explore a new character?`
     }
 
-    if (memory.rehearsalType) {
-      greetings.push(`Ready for more ${memory.rehearsalType}? I'm here to help you perfect your craft!`)
-    }
-
-    if (memory.totalSessions > 5) {
-      greetings.push(
-        `Great to see a dedicated actor! This is session #${memory.totalSessions + 1}. What scene shall we bring to life today?`,
-      )
-    }
-
-    return greetings.length > 0
-      ? greetings[Math.floor(Math.random() * greetings.length)]
-      : `Welcome back! Ready for session #${memory.totalSessions + 1}? Let's create some magic together!`
+    return "Welcome back! What would you like to rehearse today?"
   }, [memory])
+
+  // Add conversation
+  const addConversation = useCallback((title: string, firstMessage: string) => {
+    const newConversation: Conversation = {
+      id: Date.now().toString(),
+      messages: [{ id: Date.now().toString(), content: firstMessage, sender: "user", timestamp: new Date() }],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
+
+    setConversations((prev) => [...prev, newConversation])
+    setCurrentConversationId(newConversation.id)
+
+    // Update memory
+    setMemory((prev) => ({
+      ...prev,
+      totalSessions: prev.totalSessions + 1,
+    }))
+
+    return newConversation.id
+  }, [])
+
+  // Update conversation
+  const updateConversation = useCallback(
+    (id: string, lastMessage: string) => {
+      setConversations((prev) => {
+        const updated = prev.map((conv) =>
+          conv.id === id
+            ? {
+                ...conv,
+                messages: [
+                  ...conv.messages,
+                  { id: Date.now().toString(), content: lastMessage, sender: "ai", timestamp: new Date() },
+                ],
+                updatedAt: new Date(),
+              }
+            : conv,
+        )
+        saveConversations(updated)
+        return updated
+      })
+    },
+    [saveConversations],
+  )
 
   return {
     conversations,
     currentConversationId,
-    memory,
     getCurrentConversation,
     createConversation,
     addMessage,
@@ -373,7 +352,11 @@ export function useConversations() {
     deleteConversation,
     renameConversation,
     clearAllConversations,
+    memory,
     getPersonalizedGreeting,
     saveMemory,
+    isLoading,
+    addConversation,
+    updateConversation,
   }
 }

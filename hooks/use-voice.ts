@@ -1,233 +1,94 @@
 "use client"
 
-import { useState, useRef, useCallback, useEffect } from "react"
+import { useState, useCallback, useRef } from "react"
+import type { SpeechRecognition, SpeechSynthesis, SpeechSynthesisVoice } from "web-speech-api"
 
 interface UseVoiceOptions {
-  onTranscript?: (transcript: string) => void
+  onTranscript?: (text: string) => void
   onError?: (error: string) => void
-  language?: string
 }
 
-export function useVoice({ onTranscript, onError, language = "en-US" }: UseVoiceOptions = {}) {
+export function useVoice({ onTranscript, onError }: UseVoiceOptions = {}) {
   const [isListening, setIsListening] = useState(false)
-  const [isSupported, setIsSupported] = useState(false)
   const [transcript, setTranscript] = useState("")
-  const [confidence, setConfidence] = useState(0)
   const [hasPermission, setHasPermission] = useState<boolean | null>(null)
 
-  const recognitionRef = useRef<any>(null)
+  const recognitionRef = useRef<SpeechRecognition | null>(null)
   const synthRef = useRef<SpeechSynthesis | null>(null)
-  const isInitializedRef = useRef(false)
-  const restartTimeoutRef = useRef<NodeJS.Timeout>()
 
-  const initializeSpeechRecognition = useCallback(() => {
-    if (isInitializedRef.current) return
+  const isSupported =
+    typeof window !== "undefined" &&
+    ("SpeechRecognition" in window || "webkitSpeechRecognition" in window) &&
+    "speechSynthesis" in window
 
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-    const speechSynthesis = window.speechSynthesis
-
-    if (!SpeechRecognition || !speechSynthesis) {
-      setIsSupported(false)
+  const startListening = useCallback(async () => {
+    if (!isSupported) {
+      onError?.("Speech recognition not supported")
       return
     }
 
-    setIsSupported(true)
-
     try {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
       const recognition = new SpeechRecognition()
-      recognition.continuous = false // Changed to false to prevent aborted errors
+
+      recognition.continuous = true
       recognition.interimResults = true
-      recognition.lang = language
-      recognition.maxAlternatives = 1
+      recognition.lang = "en-US"
 
       recognition.onstart = () => {
-        console.log("Speech recognition started")
         setIsListening(true)
+        setHasPermission(true)
       }
 
-      recognition.onresult = (event: any) => {
+      recognition.onresult = (event) => {
         let finalTranscript = ""
-        let interimTranscript = ""
 
         for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript
-          const confidence = event.results[i][0].confidence
-
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript
-            setConfidence(confidence || 0)
-          } else {
-            interimTranscript += transcript
+          const result = event.results[i]
+          if (result.isFinal) {
+            finalTranscript += result[0].transcript
           }
         }
 
-        const fullTranscript = finalTranscript || interimTranscript
-        setTranscript(fullTranscript)
-
-        if (finalTranscript && onTranscript) {
-          onTranscript(finalTranscript.trim())
+        if (finalTranscript) {
+          setTranscript(finalTranscript)
+          onTranscript?.(finalTranscript)
         }
       }
 
-      recognition.onerror = (event: any) => {
-        console.error("Speech recognition error:", event.error)
+      recognition.onerror = (event) => {
         setIsListening(false)
-
-        // Handle different error types
-        switch (event.error) {
-          case "not-allowed":
-            setHasPermission(false)
-            if (onError) {
-              onError("Microphone access denied. Please allow microphone access and try again.")
-            }
-            break
-          case "no-speech":
-            // This is normal, just restart if needed
-            console.log("No speech detected, will restart if needed")
-            break
-          case "aborted":
-            // This happens when recognition is stopped manually, usually not an error
-            console.log("Speech recognition was stopped")
-            break
-          case "network":
-            if (onError) {
-              onError("Network error occurred. Please check your connection.")
-            }
-            break
-          default:
-            if (onError) {
-              onError(`Speech recognition error: ${event.error}`)
-            }
+        if (event.error === "not-allowed") {
+          setHasPermission(false)
+          onError?.("Microphone access denied")
+        } else {
+          onError?.(`Speech recognition error: ${event.error}`)
         }
       }
 
       recognition.onend = () => {
-        console.log("Speech recognition ended")
         setIsListening(false)
-
-        // Clear any pending restart
-        if (restartTimeoutRef.current) {
-          clearTimeout(restartTimeoutRef.current)
-        }
       }
 
       recognitionRef.current = recognition
-      synthRef.current = speechSynthesis
-      isInitializedRef.current = true
+      recognition.start()
     } catch (error) {
-      console.error("Failed to initialize speech recognition:", error)
-      setIsSupported(false)
-      if (onError) {
-        onError("Failed to initialize speech recognition")
-      }
-    }
-  }, [language, onTranscript, onError])
-
-  useEffect(() => {
-    // Check for microphone permission first
-    if (navigator.permissions) {
-      navigator.permissions
-        .query({ name: "microphone" as PermissionName })
-        .then((result) => {
-          setHasPermission(result.state === "granted")
-          if (result.state === "granted") {
-            initializeSpeechRecognition()
-          }
-        })
-        .catch(() => {
-          // Fallback if permissions API is not available
-          initializeSpeechRecognition()
-        })
-    } else {
-      // Fallback if permissions API is not available
-      initializeSpeechRecognition()
-    }
-
-    return () => {
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop()
-        } catch (error) {
-          console.log("Error stopping recognition:", error)
-        }
-      }
-      if (restartTimeoutRef.current) {
-        clearTimeout(restartTimeoutRef.current)
-      }
-    }
-  }, [initializeSpeechRecognition])
-
-  const startListening = useCallback(async () => {
-    if (!isSupported) {
-      if (onError) {
-        onError("Speech recognition is not supported in this browser")
-      }
-      return
-    }
-
-    if (isListening || !recognitionRef.current) {
-      return
-    }
-
-    // Request microphone permission if not already granted
-    if (hasPermission === false) {
-      try {
-        await navigator.mediaDevices.getUserMedia({ audio: true })
-        setHasPermission(true)
-      } catch (error) {
-        setHasPermission(false)
-        if (onError) {
-          onError("Microphone access is required for voice input")
-        }
-        return
-      }
-    }
-
-    try {
-      setTranscript("")
-      recognitionRef.current.start()
-    } catch (error: any) {
-      console.error("Error starting recognition:", error)
+      onError?.("Failed to start speech recognition")
       setIsListening(false)
-
-      if (error.name === "InvalidStateError") {
-        // Recognition is already running, stop it first
-        try {
-          recognitionRef.current.stop()
-          // Restart after a short delay
-          restartTimeoutRef.current = setTimeout(() => {
-            if (recognitionRef.current) {
-              recognitionRef.current.start()
-            }
-          }, 100)
-        } catch (stopError) {
-          console.error("Error stopping recognition:", stopError)
-        }
-      } else if (onError) {
-        onError(`Failed to start voice recognition: ${error.message}`)
-      }
     }
-  }, [isSupported, isListening, hasPermission, onError])
+  }, [isSupported, onTranscript, onError])
 
   const stopListening = useCallback(() => {
-    if (recognitionRef.current && isListening) {
-      try {
-        recognitionRef.current.stop()
-      } catch (error) {
-        console.error("Error stopping recognition:", error)
-      }
+    if (recognitionRef.current) {
+      recognitionRef.current.stop()
+      recognitionRef.current = null
     }
+    setIsListening(false)
+  }, [])
 
-    // Clear any pending restart
-    if (restartTimeoutRef.current) {
-      clearTimeout(restartTimeoutRef.current)
-    }
-  }, [isListening])
-
-  const speak = useCallback((text: string, voice?: SpeechSynthesisVoice) => {
-    if (synthRef.current) {
-      // Cancel any ongoing speech
-      synthRef.current.cancel()
+  const speak = useCallback(
+    (text: string, voice?: SpeechSynthesisVoice) => {
+      if (!isSupported || !window.speechSynthesis) return null
 
       const utterance = new SpeechSynthesisUtterance(text)
 
@@ -235,36 +96,32 @@ export function useVoice({ onTranscript, onError, language = "en-US" }: UseVoice
         utterance.voice = voice
       }
 
-      // Configure voice settings
       utterance.rate = 0.9
       utterance.pitch = 1
       utterance.volume = 0.8
 
-      synthRef.current.speak(utterance)
-
+      window.speechSynthesis.speak(utterance)
       return utterance
+    },
+    [isSupported],
+  )
+
+  const stopSpeaking = useCallback(() => {
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel()
     }
   }, [])
 
   const getVoices = useCallback(() => {
-    if (synthRef.current) {
-      return synthRef.current.getVoices()
-    }
-    return []
-  }, [])
-
-  const stopSpeaking = useCallback(() => {
-    if (synthRef.current) {
-      synthRef.current.cancel()
-    }
-  }, [])
+    if (!isSupported || !window.speechSynthesis) return []
+    return window.speechSynthesis.getVoices()
+  }, [isSupported])
 
   return {
     isListening,
-    isSupported,
     transcript,
-    confidence,
     hasPermission,
+    isSupported,
     startListening,
     stopListening,
     speak,

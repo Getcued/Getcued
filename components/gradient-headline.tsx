@@ -1,84 +1,41 @@
 "use client"
 
-import { useEffect, useRef } from "react"
 import { motion } from "framer-motion"
 
-export function GradientHeadline() {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
-
-    canvas.width = canvas.offsetWidth * window.devicePixelRatio
-    canvas.height = canvas.offsetHeight * window.devicePixelRatio
-
-    const colors = [
-      "#FF1493", // hot pink
-      "#FF8C00", // orange
-      "#FFD700", // gold
-      "#1E90FF", // blue
-      "#9370DB", // purple
-    ]
-
-    let time = 0
-
-    const animate = () => {
-      time += 0.005
-
-      // Clear canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-      // Create gradient
-      const gradient = ctx.createLinearGradient(
-        canvas.width * (0.5 + 0.4 * Math.sin(time)),
-        0,
-        canvas.width * (0.5 + 0.4 * Math.sin(time + 2)),
-        canvas.height,
-      )
-
-      // Add color stops
-      colors.forEach((color, i) => {
-        const offset = (i / (colors.length - 1) + time * 0.2) % 1
-        gradient.addColorStop(offset, color)
-      })
-
-      // Fill text with gradient
-      ctx.fillStyle = gradient
-      ctx.font = `bold ${canvas.height * 0.8}px Inter, sans-serif`
-      ctx.textAlign = "center"
-      ctx.textBaseline = "middle"
-      ctx.fillText("Get cued.", canvas.width / 2, canvas.height / 2)
-
-      requestAnimationFrame(animate)
-    }
-
-    animate()
-
-    const handleResize = () => {
-      canvas.width = canvas.offsetWidth * window.devicePixelRatio
-      canvas.height = canvas.offsetHeight * window.devicePixelRatio
-    }
-
-    window.addEventListener("resize", handleResize)
-
-    return () => {
-      window.removeEventListener("resize", handleResize)
-    }
-  }, [])
-
+export default function GradientHeadline() {
   return (
     <motion.div
-      className="w-full relative"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 1 }}
+      className="relative"
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 1, delay: 0.2 }}
     >
-      <canvas ref={canvasRef} className="w-full h-12 md:h-16 lg:h-20" style={{ display: "block" }} />
-      <h1 className="sr-only">Get cued.</h1>
+      <motion.h1
+        className="text-6xl md:text-8xl lg:text-9xl font-bold text-center mb-8 bg-gradient-to-r from-purple-400 via-pink-400 via-orange-400 via-yellow-400 via-blue-400 to-purple-400 bg-clip-text text-transparent animate-gradient bg-[length:400%_400%]"
+        animate={{
+          backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
+        }}
+        transition={{
+          duration: 8,
+          repeat: Number.POSITIVE_INFINITY,
+          ease: "linear",
+        }}
+      >
+        Get cued.
+      </motion.h1>
+
+      <motion.div
+        className="absolute inset-0 bg-gradient-to-r from-purple-400/20 via-pink-400/20 to-orange-400/20 blur-3xl -z-10"
+        animate={{
+          scale: [1, 1.1, 1],
+          opacity: [0.3, 0.6, 0.3],
+        }}
+        transition={{
+          duration: 4,
+          repeat: Number.POSITIVE_INFINITY,
+          ease: "easeInOut",
+        }}
+      />
     </motion.div>
   )
 }
