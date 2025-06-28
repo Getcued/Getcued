@@ -2,27 +2,30 @@
 
 import { motion } from "framer-motion"
 
-export function GradientHeadline() {
+export default function GradientHeadline() {
   return (
     <motion.div
       className="relative"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 1, ease: "easeOut" }}
+      transition={{ duration: 1, delay: 0.5 }}
     >
       <motion.h1
-        className="text-6xl md:text-8xl lg:text-9xl font-bold bg-gradient-to-r from-pink-500 via-orange-500 via-yellow-500 via-blue-500 to-purple-500 bg-clip-text text-transparent bg-[length:200%_200%]"
+        className="text-6xl md:text-8xl lg:text-9xl font-bold text-center leading-tight"
+        style={{
+          background: "linear-gradient(45deg, #ff006e, #ff8500, #ffb700, #8338ec, #3a86ff)",
+          backgroundSize: "400% 400%",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          backgroundClip: "text",
+        }}
         animate={{
           backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
         }}
         transition={{
           duration: 8,
-          ease: "linear",
           repeat: Number.POSITIVE_INFINITY,
-        }}
-        style={{
-          backgroundImage: "linear-gradient(45deg, #ec4899, #f97316, #eab308, #3b82f6, #8b5cf6)",
-          backgroundSize: "200% 200%",
+          ease: "linear",
         }}
       >
         Get cued.

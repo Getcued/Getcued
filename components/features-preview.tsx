@@ -3,38 +3,34 @@
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Bot, Mic, Upload, Brain, ArrowRight, Play, Zap } from "lucide-react"
+import { Bot, Mic, Upload, Brain, ArrowRight, Play, Users } from "lucide-react"
 
 interface FeaturesPreviewProps {
-  onGetStarted: () => void
+  onGetStarted?: () => void
 }
 
-export function FeaturesPreview({ onGetStarted }: FeaturesPreviewProps) {
+export default function FeaturesPreview({ onGetStarted }: FeaturesPreviewProps) {
   const features = [
     {
       icon: Bot,
       title: "AI Scene Partner",
       description:
         "Practice with an intelligent AI that adapts to any script, character, or scene you want to rehearse.",
-      color: "from-pink-500 to-rose-500",
     },
     {
       icon: Mic,
       title: "Voice Interaction",
-      description: "Speak your lines naturally and get real-time feedback on delivery, timing, and emotional depth.",
-      color: "from-purple-500 to-indigo-500",
+      description: "Speak your lines naturally and get real-time feedback on delivery, timing, and emotional beats.",
     },
     {
       icon: Upload,
       title: "Script Upload",
-      description: "Upload any script and instantly start rehearsing. From Shakespeare to contemporary works.",
-      color: "from-blue-500 to-cyan-500",
+      description: "Upload any script and start rehearsing immediately. Works with plays, films, and audition pieces.",
     },
     {
       icon: Brain,
-      title: "Memory & Progress",
-      description: "Track your improvement over time with personalized insights and performance analytics.",
-      color: "from-orange-500 to-yellow-500",
+      title: "Smart Feedback",
+      description: "Get personalized coaching on character development, line delivery, and performance techniques.",
     },
   ]
 
@@ -42,113 +38,130 @@ export function FeaturesPreview({ onGetStarted }: FeaturesPreviewProps) {
     {
       icon: Upload,
       title: "Upload Your Script",
-      description: "Drop in any script or choose from our library of classics",
+      description: "Drop in any script or choose from our library of popular scenes and monologues.",
     },
     {
       icon: Play,
       title: "Start Rehearsing",
-      description: "Practice scenes with your AI partner in real-time",
+      description: "Begin practicing with your AI scene partner who adapts to any character or role.",
     },
     {
-      icon: Zap,
+      icon: Users,
       title: "Get Feedback",
-      description: "Receive instant coaching on delivery and performance",
+      description: "Receive instant coaching on delivery, timing, and character development.",
     },
   ]
 
   return (
-    <div className="max-w-6xl mx-auto px-4 space-y-20">
+    <div className="max-w-6xl mx-auto px-4">
       {/* Features Grid */}
-      <motion.div
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.2 }}
+      <motion.section
+        id="features"
+        className="mb-20"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+        viewport={{ once: true }}
       >
-        {features.map((feature, index) => (
-          <motion.div
-            key={feature.title}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 * index }}
-          >
-            <Card className="bg-gray-900/50 border-gray-800 hover:border-gray-700 transition-all duration-300 group h-full">
-              <CardContent className="p-6 text-center space-y-4">
-                <motion.div
-                  className={`w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}
-                  whileHover={{ rotate: 5 }}
-                >
-                  <feature.icon className="w-8 h-8 text-white" />
-                </motion.div>
-                <h3 className="text-xl font-semibold text-white">{feature.title}</h3>
-                <p className="text-gray-400 leading-relaxed">{feature.description}</p>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
-      </motion.div>
-
-      {/* How It Works */}
-      <motion.div
-        className="text-center space-y-12"
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.4 }}
-      >
-        <div className="space-y-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-white">How It Works</h2>
-          <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-            Get started in three simple steps and transform your rehearsal process
+        <div className="text-center mb-12">
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
+            Your AI Rehearsal Studio
+          </h2>
+          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+            Practice anywhere, anytime with an AI partner that understands acting, character development, and
+            performance.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {features.map((feature, index) => (
+            <motion.div
+              key={feature.title}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: index * 0.1 }}
+              viewport={{ once: true }}
+            >
+              <Card className="bg-gray-900/50 border-gray-700 hover:border-purple-500/50 transition-all duration-300 h-full">
+                <CardContent className="p-6 text-center">
+                  <motion.div
+                    className="w-12 h-12 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center"
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                  >
+                    <feature.icon className="w-6 h-6 text-white" />
+                  </motion.div>
+                  <h3 className="text-lg font-semibold text-white mb-2">{feature.title}</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">{feature.description}</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      </motion.section>
+
+      {/* How It Works */}
+      <motion.section
+        id="how-it-works"
+        className="mb-20"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+        viewport={{ once: true }}
+      >
+        <div className="text-center mb-12">
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-orange-400 via-pink-400 to-purple-400 bg-clip-text text-transparent">
+            How It Works
+          </h2>
+          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+            Get started in three simple steps and transform your rehearsal process.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
           {steps.map((step, index) => (
             <motion.div
               key={step.title}
-              className="relative"
+              className="text-center"
               initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 + 0.1 * index }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: index * 0.2 }}
+              viewport={{ once: true }}
             >
-              <div className="text-center space-y-4">
-                <div className="relative">
-                  <div className="w-20 h-20 mx-auto bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center">
-                    <step.icon className="w-10 h-10 text-white" />
-                  </div>
-                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-orange-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                    {index + 1}
-                  </div>
+              <motion.div
+                className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center relative"
+                whileHover={{ scale: 1.1 }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+              >
+                <step.icon className="w-8 h-8 text-white" />
+                <div className="absolute -top-2 -right-2 w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                  {index + 1}
                 </div>
-                <h3 className="text-xl font-semibold text-white">{step.title}</h3>
-                <p className="text-gray-400">{step.description}</p>
-              </div>
-
-              {index < steps.length - 1 && (
-                <div className="hidden md:block absolute top-10 left-full w-full">
-                  <ArrowRight className="w-6 h-6 text-gray-600 mx-auto" />
-                </div>
-              )}
+              </motion.div>
+              <h3 className="text-xl font-semibold text-white mb-2">{step.title}</h3>
+              <p className="text-gray-400 leading-relaxed">{step.description}</p>
             </motion.div>
           ))}
         </div>
 
+        {/* CTA Button */}
         <motion.div
-          className="pt-8"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
+          className="text-center"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.8 }}
+          viewport={{ once: true }}
         >
           <Button
             onClick={onGetStarted}
             size="lg"
-            className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold px-8 py-4 rounded-full text-lg shadow-lg hover:shadow-xl transition-all duration-300 group"
+            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold px-8 py-4 text-lg rounded-full group"
           >
             Let's Get Started
             <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </Button>
         </motion.div>
-      </motion.div>
+      </motion.section>
     </div>
   )
 }

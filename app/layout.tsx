@@ -6,9 +6,8 @@ import "./globals.css"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Cued - AI Rehearsal Partner for Actors",
-  description:
-    "Your 24/7 AI scene partner. Practice, perfect, and get cast with Cued's intelligent rehearsal platform.",
+  title: "Cued - AI Rehearsal Partner",
+  description: "Your 24/7 AI scene partner. Practice, perfect, and get cast.",
     generator: 'v0.dev'
 }
 

@@ -2,7 +2,8 @@
 const nextConfig = {
   experimental: {
     serverActions: true,
-    optimizePackageImports: ['lucide-react']
+    optimizePackageImports: ['lucide-react'],
+    serverComponentsExternalPackages: ["@ai-sdk/openai"],
   },
   eslint: {
     ignoreDuringBuilds: true,

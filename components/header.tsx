@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion"
 
-export function Header() {
+export default function Header() {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
@@ -18,7 +18,7 @@ export function Header() {
         <div className="flex items-center justify-between">
           <button
             onClick={scrollToTop}
-            className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent hover:from-pink-400 hover:to-purple-500 transition-all duration-200"
+            className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent hover:scale-105 transition-transform"
           >
             Cued
           </button>

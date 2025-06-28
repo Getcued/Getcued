@@ -17,7 +17,7 @@ const XIcon = ({ className }: { className?: string }) => (
   </svg>
 )
 
-export function Footer() {
+export default function Footer() {
   return (
     <motion.footer
       className="w-full bg-gray-900/50 border-t border-gray-800/50 mt-20"

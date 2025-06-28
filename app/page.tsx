@@ -1,8 +1,8 @@
-import { GradientHeadline } from "@/components/gradient-headline"
-import { Header } from "@/components/header"
-import { FeaturesPreview } from "@/components/features-preview"
+import GradientHeadline from "@/components/gradient-headline"
+import Header from "@/components/header"
+import FeaturesPreview from "@/components/features-preview"
 import ChatInterface from "@/components/chat-interface"
-import { Footer } from "@/components/footer"
+import Footer from "@/components/footer"
 
 export default function HomePage() {
   const scrollToChat = () => {
